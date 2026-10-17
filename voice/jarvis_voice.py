@@ -334,7 +334,7 @@ class Brain:
 
     def system(self):
         s = crm.settings(db.connect())
-        return (f"You are JARVIS, hands-free voice partner to Ademola (Mola) Faleye, a real estate wholesaler (MolaBucks Capital Group), "
+        return (f"You are JARVIS, hands-free voice partner to Ademola (Mola) Faleye, a real estate wholesaler (MolaBucks Capital), "
                 f"focused on Florida. Goal: ${s['goal']:,.0f} in assignment fees per month. Today is {date.today():%A, %B %d, %Y}.\n"
                 "Act through tools. Only say something succeeded if its tool result has status ok; repeat the result's summary. If a result has status needs_input, ask that question. "
                 "If a write fails, say so plainly. Use search_deals to find ids before updates; if several deals match, ask which. "

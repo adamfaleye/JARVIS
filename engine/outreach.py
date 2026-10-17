@@ -489,7 +489,7 @@ def render(text, e, cfg):
     first = (e["first"] or "").title() or "there"
     street = (e["address"] or "your property").split(",")[0].strip()
     return re.sub(r"\{(\w+)\}", lambda m: {"first": first, "street": street, "city": (e["city"] or "").title() or "your area",
-                                           "sender": cfg["sms"].get("sender_name", ""), "company": "MolaBucks Capital Group"}.get(m.group(1), ""), text)
+                                           "sender": cfg["sms"].get("sender_name", ""), "company": "MolaBucks Capital"}.get(m.group(1), ""), text)
 
 
 def _sent_today(con, day, sender=None):

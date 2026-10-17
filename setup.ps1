@@ -17,7 +17,7 @@ function Find-Python {
 }
 
 try {
-    Write-Host "J.A.R.V.I.S  ·  MolaBucks Capital Group  ·  setup" -ForegroundColor Cyan
+    Write-Host "J.A.R.V.I.S  ·  MolaBucks Capital  ·  setup" -ForegroundColor Cyan
 
     # 1. Python
     Say "Checking for Python 3.11+"
@@ -86,7 +86,7 @@ try {
         $lnk.WorkingDirectory = $Root
         $lnk.IconLocation = $icon
         $lnk.WindowStyle = 7
-        $lnk.Description = "JARVIS for MolaBucks Capital Group"
+        $lnk.Description = "JARVIS for MolaBucks Capital"
         $lnk.Save()
     }
 
