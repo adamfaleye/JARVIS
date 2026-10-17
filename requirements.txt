@@ -1,0 +1,6 @@
+anthropic>=0.40
+playwright>=1.45
+twilio>=9.0
+PyYAML>=6.0
+mcp>=1.9,<2
+tzdata

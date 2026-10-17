@@ -1,0 +1,42 @@
+# JARVIS Engine settings. Counties live in counties.yaml (edit there or use: python run.py add-county).
+anthropic_model: claude-sonnet-5-5   # used to read county pages and WhatsApp exports
+timezone: America/New_York
+
+scrape:
+  days_ahead: 30        # how far ahead to read auction calendars
+  delay_seconds: 3      # pause between page loads; be polite to county servers
+  max_pages: 15
+  headless: true
+  schedule_hour: 6      # loop mode scrapes once a day at this hour
+
+sms:
+  enabled: false         # turn on only after Twilio A2P 10DLC registration is approved
+  require_consent: true  # only auto-text contacts marked as consented or who replied. See README before changing.
+  quiet_hours: {start: "09:00", end: "20:00"}
+  daily_limit: 150
+  dnc_file: data/dnc.txt
+  sender_name: Ademola
+  sequence:
+    - day: 0
+      text: "Hi {first}, this is {sender}. I buy houses locally for cash and wanted to ask if you'd consider an offer on {street}. Any condition, you pick the closing date. Reply STOP to opt out."
+    - day: 2
+      text: "Hi {first}, {sender} again. Still interested in making you a fair cash offer on {street} if the timing works. No repairs or fees on your end."
+    - day: 6
+      text: "{first}, just checking back on {street}. If selling isn't on your mind right now, no problem. Reply anytime."
+    - day: 20
+      text: "Hi {first}, {sender} here. Circling back on {street}. If anything has changed, I can have an offer to you within 24 hours."
+
+feed:
+  inbox: inbox/feed          # drop WhatsApp chat exports (.txt) here
+  buyers_csv: data/buyers.csv
+
+voice:
+  wake_model: hey_jarvis       # say "Hey Jarvis"
+  wake_threshold: 0.5          # raise to 0.6-0.7 if it wakes by accident; lower if it misses you
+  whisper_model: base.en       # small.en = more accurate, slower
+  followup_seconds: 6          # keep listening this long for a follow-up without the wake word
+  tts: elevenlabs              # elevenlabs = your ElevenLabs voice; edge = free British voice; sapi = built-in Windows voice
+  elevenlabs_voice_id: wDsJlOXPqcvIUKdLXjDs
+  elevenlabs_model: eleven_flash_v2_5   # fast, low-latency model; eleven_multilingual_v2 = slower, richer
+  edge_voice: en-GB-RyanNeural # backup if ElevenLabs is unreachable or out of credits
+  sapi_rate: 185

@@ -1,0 +1,24 @@
+# One entry per county source. Adapters:
+#   realauction  - RealAuction sites (realforeclose.com, realtaxdeed.com, sheriffsaleauction.ohio.gov). Used by many FL and OH counties.
+#   ai_page      - any public web page; Claude reads it using your instructions.
+#   csv_url      - a county that publishes a downloadable CSV.
+#   custom:<module> - a hand-built adapter in engine/adapters/<module>.py (see _template.py).
+counties:
+  - name: Pinellas
+    state: FL
+    adapter: realauction
+    url: https://pinellas.realforeclose.com
+    sale_type: foreclosure
+    enabled: true
+  - name: Hillsborough
+    state: FL
+    adapter: realauction
+    url: https://hillsborough.realforeclose.com
+    sale_type: foreclosure
+    enabled: true
+  - name: Pinellas
+    state: FL
+    adapter: realauction
+    url: https://pinellas.realtaxdeed.com
+    sale_type: taxdeed
+    enabled: true

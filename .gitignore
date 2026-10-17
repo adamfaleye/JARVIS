@@ -1,0 +1,19 @@
+# Secrets
+.env
+
+# Local data (contains lead and contact info)
+data/*
+!data/.keep
+out/*
+!out/.keep
+inbox/feed/*
+!inbox/feed/.keep
+*.db
+*.log
+*.csv
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc

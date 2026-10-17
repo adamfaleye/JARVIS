@@ -1,0 +1,9 @@
+# Hands-free voice (install after requirements.txt)
+openwakeword>=0.6
+onnxruntime
+faster-whisper>=1.0
+sounddevice
+numpy
+edge-tts
+miniaudio
+pyttsx3
