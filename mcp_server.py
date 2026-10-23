@@ -56,6 +56,16 @@ def crm_pull(since: str = "", include_leads: bool = False, include_voice: bool =
 
 def _hunter(req, write):
     op = (req or {}).get("op") or ""
+    if op.startswith("hq."):  # MolaBucks Capital HQ: agents, tasks, goals, approvals, reports
+        from engine import hq as q
+        sub = op[3:]
+        if (sub in q.WRITE_OPS) != write or (sub not in q.WRITE_OPS and sub not in q.READ_OPS):
+            return {"error": f"'{op}' isn't allowed here."}
+        try:
+            qcon = q.connect()
+            return {"ok": True, "data": q.handle(qcon, config.load(), dict(req, op=sub))}
+        except Exception as e:
+            return {"error": str(e) if isinstance(e, (ValueError, KeyError)) else f"{e.__class__.__name__}: {e}"}
     if op.startswith("out."):  # outreach: campaigns, numbers, dialer, call log, DNC, usage
         from engine import outreach as o
         sub = op[4:]

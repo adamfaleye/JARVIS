@@ -200,6 +200,10 @@ A green **PC link** appears under the goal bar. While JARVIS is open on your PC,
 
 **Approval prompts:** Claude Desktop may ask you to approve the "save" sync call. If it offers to always allow, choose that.
 
+## 10. HQ in VR (Meta Quest 2)
+
+Double-click **Start-HQ-VR**. On the Quest, open the address it shows in Meta Quest Browser, then enter the 6-digit pairing code. In HQ, press **Enter VR**. Full setup, controls, security and the test checklist are in **VR.md**. VR hasn't been tested on a physical headset yet.
+
 ## Ground rules the engine follows
 
 - **Public records only.** It reads public auction calendars and record pages.
