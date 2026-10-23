@@ -2,9 +2,11 @@
 
 **A voice-controlled AI agent that runs a real estate acquisitions business.** Say "Hey Jarvis" from across the room and it reads your call queue, logs calls, moves deals through the pipeline, matches buyers, and runs the numbers on a property. Behind the voice, it scrapes county records for motivated sellers every morning, scores them, and runs compliant SMS follow-up through Twilio, with every outbound message approved by a human.
 
+You can also walk through it. **MolaBucks Capital HQ** is a 3D office where JARVIS acts as CEO over six AI agents. Each agent works a real task queue, and what you see in the office reflects their actual state. It runs in a browser or on a Meta Quest 2 through WebXR.
+
 I built it to run my own wholesaling business, MolaBucks Capital, and it's in daily use.
 
-`Python` · `Claude API (tool use)` · `MCP` · `Playwright` · `Twilio` · `SQLite` · `faster-whisper` · `openWakeWord` · `ElevenLabs`
+`Python` · `Claude API (tool use)` · `MCP` · `Playwright` · `Twilio` · `SQLite` · `Three.js` · `WebXR` · `faster-whisper` · `openWakeWord` · `ElevenLabs`
 
 ---
 
@@ -47,11 +49,46 @@ skip-trace                    DNC / STOP     matching
 - When a lead replies, **Claude drafts the response; a human taps Send.** Nothing goes out unreviewed.
 - Click-to-call bridging through Twilio: rings your cell, then connects the lead from the number they know.
 
+### MolaBucks Capital HQ: the agent team in 3D (`engine/hq.py`, `web/jarvis.html`)
+- **Six AI employees under a JARVIS "CEO":**
+  - Hunter: acquisitions
+  - Closer: dispositions
+  - Dispositions: buyer matching
+  - Follow-up
+  - Front Desk: communications intake
+  - Finance
+- **A durable task queue in SQLite.** Each task has an owner, status, attempts and an event log. Workers lease a task so no two processes run the same one. Failures retry with backoff and are marked **blocked** with a reason instead of being silently skipped.
+- **A task only counts as done when its result checks out.** JARVIS turns a monthly revenue goal into a plan by working backward from collected fees through closings, contracts, offers and conversations, then assigns the day's work.
+- **Approval levels:**
+  - Internal work runs on its own.
+  - Drafts wait for review.
+  - Outside commitments, such as launching a campaign or spending money, go to an approval station. Each approval covers only the exact parameters you reviewed, and no agent can approve its own work.
+- **A walkable 3D office built on Three.js.** It shows the system's real state:
+  - Agents type only while their task is running.
+  - An agent waiting on approval raises its hand.
+  - Failed agents slump under a red marker.
+  - The HUD, minimap and objectives are built from live data.
+- **Quality and fallback:** graphics presets adjust automatically to the frame rate. Devices without 3D support get a plain Operations list instead.
+
+### VR on Meta Quest 2 (`engine/web.py`, `run.py web`)
+- `run.py web` serves HQ over HTTPS on the local network, using the same `crm_pull` / `crm_push` sync as the desktop link. Devices pair with a single-use 6-digit code.
+- **WebXR mode:**
+  - Smooth movement and snap turn.
+  - Collision.
+  - In-world menus and panels.
+  - Approvals with confirmation.
+- **VR-specific rendering profile:** merged geometry and no post-processing. This cut lobby draw calls from 528 to 135.
+- **Verified in Meta's IWER Quest 2 emulator; not yet tested on a physical headset.** The setup guide and test checklist are in [`docs/VR.md`](docs/VR.md).
+
 ### Integrations (`mcp_server.py`)
 - An **MCP server** exposes the engine to Claude Desktop ("add Lee County", "how many new leads today?") and syncs the JARVIS web app with the local CRM (newest-timestamp-wins merge).
 
 ## Engineering notes
-- **88 automated checks** across `tests/test_hunter.py` and `tests/test_outreach.py`, covering dedupe, scoring, skip-trace import, DNC enforcement, drip timing, sender mapping, and the read/write boundary.
+- **160 automated checks** across four suites:
+  - `tests/test_hunter.py`: dedupe, scoring, skip-trace import.
+  - `tests/test_outreach.py`: DNC enforcement, drip timing, sender mapping.
+  - `tests/test_hq.py`: task leasing, retries, blocked dependencies, approval binding.
+  - `tests/test_web.py`: pairing and the HTTPS sync server.
 - Scrapers pace their requests, never bypass CAPTCHAs or logins (they raise `Blocked` instead), and never fabricate fields.
 - All lead and contact data stays local in SQLite. Nothing personal is in this repo.
 
@@ -63,10 +100,11 @@ playwright install chromium
 copy .env.example .env          # add your Anthropic key; Twilio keys optional
 python run.py scrape            # pull every configured county
 python run.py voice             # needs requirements-voice.txt
-python -m tests.test_hunter     # run the tests
+python run.py web               # serve HQ to a Quest / other devices on your network
+python -m tests.test_hunter     # run the tests (also test_outreach, test_hq, test_web)
 ```
 
-Full Windows setup, county configuration, and texting compliance notes are in [`docs/SETUP.md`](docs/SETUP.md). The Hunter's scoring model is in [`docs/HUNTER.md`](docs/HUNTER.md), and the outreach rules are in [`docs/OUTREACH.md`](docs/OUTREACH.md).
+Full Windows setup, county configuration, and texting compliance notes are in [`docs/SETUP.md`](docs/SETUP.md). How HQ works is in [`docs/HQ.md`](docs/HQ.md), VR setup is in [`docs/VR.md`](docs/VR.md), and the system design and roadmap are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). The Hunter's scoring model is in [`docs/HUNTER.md`](docs/HUNTER.md), and the outreach rules are in [`docs/OUTREACH.md`](docs/OUTREACH.md).
 
 ---
 

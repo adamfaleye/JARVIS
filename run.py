@@ -10,6 +10,9 @@
   python run.py loop                       run everything on a schedule (leave this window open)
   python run.py voice [--device N]         hands-free JARVIS ("Hey Jarvis")
   python run.py voice --list-devices       show microphones
+  python run.py web [--local] [--port N]   HQ on your network for the Meta Quest (see VR.md)
+  python run.py web --pair                 new pairing code for a headset or browser
+  python run.py web --revoke               unpair every device
 """
 import argparse
 import sys
@@ -30,6 +33,8 @@ def main():
     m.add_argument("file", nargs="?"); m.add_argument("--consent", action="store_true")
     sub.add_parser("feed")
     sub.add_parser("loop")
+    wp = sub.add_parser("web"); wp.add_argument("--port", type=int, default=8443); wp.add_argument("--local", action="store_true")
+    wp.add_argument("--http", action="store_true"); wp.add_argument("--pair", action="store_true"); wp.add_argument("--revoke", action="store_true")
     vp = sub.add_parser("voice"); vp.add_argument("--device", type=int); vp.add_argument("--list-devices", action="store_true")
     args = ap.parse_args()
     cfg = config.load()
@@ -70,6 +75,17 @@ def main():
         feed.process(cfg) or print("No new exports in inbox/feed.")
     elif args.cmd == "loop":
         loop(cfg)
+    elif args.cmd == "web":
+        from engine import web
+        if args.revoke:
+            print(f"Unpaired {web.revoke_all()} device(s).")
+        elif args.pair:
+            c = web.new_pairing_code()
+            print(f"Pairing code (15 minutes): {c[:3]} {c[3:]}")
+        else:
+            if args.http and not args.local:
+                sys.exit("Plain HTTP is only allowed with --local (WebXR needs HTTPS on your network).")
+            web.serve(args.port, args.local, not args.http)
     elif args.cmd == "voice":
         from voice import jarvis_voice
         jarvis_voice.list_devices() if args.list_devices else jarvis_voice.main(args.device)
@@ -95,6 +111,15 @@ def loop(cfg):
     except Exception as e:
         hcon = None
         print(f"(Hunter setup skipped: {e})")
+    from engine import hq
+    try:
+        qcon = hq.connect()
+        n = hq.recover(qcon)
+        if n:
+            print(f"HQ: recovered {n} interrupted task(s).")
+    except Exception as e:
+        qcon = None
+        print(f"(HQ setup skipped: {e})")
     poll_every = int(cfg.get("sms", {}).get("poll_seconds", 60))
     while True:
         now = datetime.now()
@@ -109,6 +134,9 @@ def loop(cfg):
             agent.process_outbox(con, cfg)
             if hcon is not None:
                 hunter.run_queued(hcon, cfg)
+            if qcon is not None:
+                hq.tick(qcon, cfg)
+                db.kv_set(qcon, "hq_last_tick", datetime.now().isoformat(timespec="seconds"))
             if t - last["sms"] > 120:
                 sms.tick(cfg); last["sms"] = t
             if t - last["feed"] > 300:

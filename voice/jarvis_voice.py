@@ -264,6 +264,8 @@ TOOLS = [
     ("new_county_leads", "New leads the county scraper found that haven't been loaded into JARVIS yet.", {"county": {"type": "string"}}),
     ("texting_status", "Texting and campaigns: sent and replies today, 7-day response rate, hot/warm/cold repliers, running campaigns with their numbers, "
      "texts queued today, and why sending is held (texting off, quiet hours, emergency stop). Also the latest seller replies.", {}),
+    ("hq_status", "MolaBucks Capital HQ: what each AI agent (Hunter, Closer, Follow-up, Front Desk, Dispositions, Finance) is doing right now, "
+     "their queues, anything failed or blocked, approvals waiting for Mola, the active monthly goal and plan, and the latest briefing.", {}),
     ("pause_campaign", "Pause a running text campaign by name, or all of them. Only pauses; launching or resuming is done in the JARVIS app.",
      {"name": {"type": "string", "description": "Campaign name, or 'all'"}}, ["name"]),
 ]
@@ -292,6 +294,14 @@ def run_tool(name, args, ctx=None):
         ov = outreach.overview(oc, config.load())
         ov.pop("hours", None)
         return {**ov, "recent_replies": sms.overview()["recent_replies"][:5]}
+    if name == "hq_status":
+        from engine import hq
+        st = hq.state(hq.connect(), config.load())
+        return {"agents": {a["name"]: {"state": a["state"], "doing": (a["running"] or {}).get("title"), "queue": a["queue"],
+                                       "last": (a["last"] or {}).get("summary") or (a["last"] or {}).get("error")} for a in st["agents"].values()},
+                "approvals_waiting": [t["title"] for t in st["approvals"]], "goal": (st["goal"] or {}).get("text"),
+                "plan": (st["goal"] or {}).get("plan"), "latest_report": (st["latest_report"] or {}).get("title"),
+                "deadlines": st["deadlines"][:5], "note": "Approvals happen in the JARVIS app, not by voice."}
     if name == "pause_campaign":
         from engine import outreach
         oc = outreach.connect()
