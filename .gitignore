@@ -1,7 +1,21 @@
-# Secrets
-.env
+# The GitHub repo is PUBLIC. Nothing below may ever be pushed.
 
-# Local data (contains lead and contact info)
+# Secrets: API keys, tokens, OAuth files, TLS keys
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+data/gmail_token.json
+data/google_client.json
+**/*token*.json
+**/*secret*.json
+**/client_secret*.json
+**/credentials*.json
+
+# Local data: leads, contacts, client customer data (AI Sidekicks deployments), CRM databases, logs
 data/*
 !data/.keep
 out/*
@@ -9,11 +23,24 @@ out/*
 inbox/feed/*
 !inbox/feed/.keep
 *.db
+*.db-shm
+*.db-wal
+*.sqlite
 *.log
+*.pid
 *.csv
+*.zip
 
-# Python
+# Test fixtures captured from live public-record sites (real names and addresses)
+tests/fixtures/
+
+# Python / tooling
 .venv/
 venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+
+# Suites that replay real public-record pages (they name real owners); kept only on the owner's PC
+tests/test_clerk_pinellas.py
+tests/test_owner_lookup.py

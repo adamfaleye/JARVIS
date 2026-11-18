@@ -53,7 +53,7 @@ def export(log=print):
     """Writes out/jarvis_leads_import.csv (upload to JARVIS › Pipeline › Import › Seller leads)
     and out/skiptrace.csv (upload to your skip-trace provider). Marks leads exported."""
     con = db.connect()
-    rows = con.execute("SELECT * FROM leads WHERE status IN ('new','exported') AND exported_at IS NULL ORDER BY event_date").fetchall()
+    rows = con.execute("SELECT * FROM leads WHERE status IN ('new','exported') AND exported_at IS NULL AND " + db.UPCOMING + " ORDER BY event_date").fetchall()
     if not rows:
         log("No new leads to export.")
         return 0

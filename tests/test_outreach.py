@@ -168,14 +168,14 @@ ok(fk.sent[-1][0] == "+18135550055" and fk.sent[-1][1] == B, "Inbox reply goes o
 
 print("dialer")
 ok(raises(lambda: O.place_call(con, cfg, {"phone": "8135550100"}, client=fk, now_dt=NOON), "cell number"), "needs your cell number")
-O.set_settings(con, {"myCell": "774-444-0000"})
+O.set_settings(con, {"myCell": "617-555-0100"})
 ok(raises(lambda: O.place_call(con, cfg, {"phone": "8135550001"}, client=fk, now_dt=NOON), "do not contact"), "won't dial Do Not Contact")
 ok(raises(lambda: O.place_call(con, cfg, {"phone": "8135550100"}, client=fk, now_dt=NOON.replace(hour=21)), "calling hours"), "won't dial outside calling hours")
 ok(raises(lambda: O.place_call(con, cfg, {"phone": "8135550004"}, client=fk, now_dt=NOON), "ok to call manually"), "Hunter number needs 'OK to call manually'")
 r = O.place_call(con, cfg, {"phone": "8135550055", "name": "Lead"}, client=fk, now_dt=NOON)
 to, frm, twiml = fk.calls_made[-1]
-ok(to == "+17744440000" and frm == B and "<Number>+18135550055</Number>" in twiml and f'callerId="{B}"' in twiml, "rings your cell, then bridges the lead from their number")
-fk.call_list = [NS(sid="CA1", parent_call_sid=None, direction="outbound-api", from_=B, to="+17744440000", status="completed", duration="95", start_time=datetime(2026, 10, 15, 12)),
+ok(to == "+16175550100" and frm == B and "<Number>+18135550055</Number>" in twiml and f'callerId="{B}"' in twiml, "rings your cell, then bridges the lead from their number")
+fk.call_list = [NS(sid="CA1", parent_call_sid=None, direction="outbound-api", from_=B, to="+16175550100", status="completed", duration="95", start_time=datetime(2026, 10, 15, 12)),
                 NS(sid="CA2", parent_call_sid="CA1", direction="outbound-dial", from_=B, to="+18135550055", status="completed", duration="80", start_time=datetime(2026, 10, 15, 12)),
                 NS(sid="CA3", parent_call_sid=None, direction="inbound", from_="+18135559999", to=A, status="no-answer", duration="0", start_time=datetime(2026, 10, 15, 11))]
 cl = O.call_log(con, cfg, client=fk)["calls"]

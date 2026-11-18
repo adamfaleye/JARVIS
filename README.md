@@ -1,110 +1,113 @@
 # JARVIS
 
-**A voice-controlled AI agent that runs a real estate acquisitions business.** Say "Hey Jarvis" from across the room and it reads your call queue, logs calls, moves deals through the pipeline, matches buyers, and runs the numbers on a property. Behind the voice, it scrapes county records for motivated sellers every morning, scores them, and runs compliant SMS follow-up through Twilio, with every outbound message approved by a human.
+**A Claude multi-agent operating system that runs two real businesses from one engine.** JARVIS started as a voice-controlled AI agent for my real estate acquisitions company, MolaBucks Capital. JARVIS 2.0 now also runs my AI automation agency, **AI Sidekicks**. The two businesses share one engine but keep separate workspaces, records, and audit logs.
 
-You can also walk through it. **MolaBucks Capital HQ** is a 3D office where JARVIS acts as CEO over six AI agents. Each agent works a real task queue, and what you see in the office reflects their actual state. It runs in a browser or on a Meta Quest 2 through WebXR.
+Say "Hey Jarvis" from across the room and it reads your call queue, logs calls, moves deals, and runs the numbers on a property. Behind the voice, the engine:
 
-I built it to run my own wholesaling business, MolaBucks Capital, and it's in daily use.
+- scrapes county records for motivated sellers,
+- finds and researches small-business prospects for the agency,
+- drafts outreach for a human to approve,
+- runs an Instagram DM assistant,
+- keeps a durable task queue moving for 18 AI agents.
 
-`Python` · `Claude API (tool use)` · `MCP` · `Playwright` · `Twilio` · `SQLite` · `Three.js` · `WebXR` · `faster-whisper` · `openWakeWord` · `ElevenLabs`
+I built it to run my own businesses, and I use it every day.
+
+`Python` · `Claude API (tool use)` · `MCP` · `Playwright` · `SQLite` · `Twilio` · `Gmail` · `Instagram Graph API` · `Three.js` · `WebXR` · `faster-whisper` · `openWakeWord` · `ElevenLabs`
 
 ---
 
 ## How it works
 
 ```
-                  "Hey Jarvis, who do I call first?"
-                                 │
-        ┌────────────────────────▼────────────────────────┐
-        │  VOICE   openWakeWord → faster-whisper (STT)    │
-        │          → Claude tool loop → ElevenLabs (TTS)  │
-        └────────────────────────┬────────────────────────┘
-                                 │ 18 typed tools
-   ┌──────────────┬──────────────┼──────────────┬──────────────┐
-   ▼              ▼              ▼              ▼              ▼
-THE HUNTER     CRM MIRROR     THE CLOSER     DEAL FEED      MCP SERVER
-county         pipeline,      SMS drips,     WhatsApp       Claude Desktop
-scrapers →     tasks, buyers, AI-drafted     exports →      + the JARVIS
-scoring →      audit log      replies,       buyer          web app sync
-skip-trace                    DNC / STOP     matching
-   └──────────────┴──────────────┴──────────────┴──────────────┘
-                                 │
-                          SQLite (local)
+                 "Hey Jarvis, what needs me today?"
+                                │
+       ┌────────────────────────▼────────────────────────┐
+       │  VOICE   openWakeWord → faster-whisper (STT)    │
+       │          → Claude tool loop → ElevenLabs (TTS)  │
+       └────────────────────────┬────────────────────────┘
+                                │ 29 typed tools
+ ┌──────────────────────────────▼───────────────────────────────┐
+ │  HQ ENGINE (engine/hq.py)  durable task queue · leases ·      │
+ │  retries · hash-bound approvals · per-business audit log      │
+ │  18 agents (org.py) · daily AI spend cap (agents_ai.py)       │
+ └──────┬──────────────────────┬─────────────────────┬──────────┘
+        ▼                      ▼                     ▼
+  MOLABUCKS CAPITAL       AI SIDEKICKS           INTEGRATIONS
+  Hunter (county          SDR research,          MCP server (Claude
+  records → scoring),     Gmail outreach,        Desktop + app sync),
+  Closer (SMS),           Instagram DM           Telegram line,
+  deal feed, CRM          assistant, client CRM  HTTPS/VR web server
+        └──────────────────────┴─────────────────────┘
+                               │
+                        SQLite (local only)
 ```
 
-### The Hunter: motivated-seller sourcing (`engine/hunter.py`, `engine/adapters/`)
-- **Pluggable county adapters.** RealAuction sites (foreclosure, tax-deed, Ohio sheriff sales), public CSV feeds, and an `ai_page` adapter where Claude reads an arbitrary county records page from plain-English instructions. Adding a county is one command: `python run.py add-county "Pasco" --state FL`.
-- **16 distress categories** (probate, pre-foreclosure, tax delinquent, bankruptcy, code violation, and more), deduplicated by case number or normalized address and **scored into A/B/C tiers** with a stated reason for every score.
-- **Skip-trace round trip.** Exports trace files, re-imports results, and attaches phones to the right property, with manual review for ambiguous matches.
+### Two businesses, one engine (JARVIS 2.0)
+* **Kept separate by business.** Every task and record carries its business, the assistant can only use the active business's operations, and every audit entry goes to that business's own log. The executive overview reads both businesses and writes to neither. See `docs/JARVIS2.md`.
+* **18 AI agents** in four groups: Executive Office, MolaBucks Capital, and AI Sidekicks Sales, Delivery and Client Success (`engine/org.py`). An agent shows as live only when real code runs its work.
+* **Controlled autonomy, enforced in the backend.**
+  + Internal work runs on its own.
+  + Drafts wait for review.
+  + Outside commitments wait for an approval. Each approval is bound to a hash of the exact parameters you reviewed, so editing a detail afterward voids it, and no agent can approve its own work.
+* **Cost control.** Every Claude call is priced before it runs and checked against a daily AI spend cap. Each agent also has its own budget inside that cap, so one agent can't use up the whole day (`engine/agents_ai.py`).
+
+### AI Sidekicks
+* **AI SDR.** It finds small and midsize businesses online, scores fit, and drafts tailored intro emails from verified facts. Every fact in its CRM carries a source URL and a confidence grade (`engine/dcrm.py`, `engine/hq.py`).
+* **Approval-gated Gmail outreach.**
+  + Every batch needs a hash-bound approval of the exact emails shown.
+  + Sending is paced under daily limits and only in the hours you set.
+  + Sends are retry-safe.
+  + A do-not-email list is checked at send time (`engine/gmail.py`).
+* **Instagram DM assistant.** It answers questions about AI Sidekicks' services and turns interest into discovery-call requests. Nothing is booked until the owner verifies the slot and approves it. It runs in test mode until the pilot is approved (`engine/igassist/`, `docs/AISIDEKICKS.md`).
+
+### MolaBucks Capital
+* **The Hunter.** Pluggable county adapters cover RealAuction foreclosure, tax-deed and Ohio sheriff sales, public CSV feeds, a clerk adapter, and an `ai_page` adapter where Claude reads a records page from plain-English instructions. Leads fall into **16 distress categories**, get deduplicated, and are **scored into A/B/C tiers** with a stated reason for each score.
+* **The Closer.** SMS drip campaigns stop when a lead replies, respect quiet hours and a daily cap, and check STOP and Do-Not-Contact again at send time. Claude drafts replies, and a human taps Send.
 
 ### Voice agent (`voice/jarvis_voice.py`)
-- Hands-free loop: wake word → local Whisper transcription → **Claude tool use over 18 CRM tools** → spoken reply, with follow-up listening so you don't repeat the wake word.
-- **Grounding guards.** Every dollar amount and date the agent writes must come with the user's exact words (`amounts_said`, `dates_said`), validated in `engine/crm.py` before anything is saved. The model can't invent an offer price or a follow-up date.
-- Read/write separation: reads run freely, writes go through validated operations and leave an audit entry.
-- TTS fallback chain: ElevenLabs → Edge neural voice → Windows SAPI.
+* The hands-free loop runs wake word → local Whisper transcription → **Claude tool use over 29 typed tools** → spoken reply.
+* **Grounding guards.** Any dollar amount or date the agent writes must match the user's exact words, or the write is rejected.
 
-### The Closer: compliant SMS outreach (`engine/outreach.py`, `engine/agent.py`, `engine/sms.py`)
-- Multi-step drip campaigns that **stop on reply**, respect quiet hours and a daily cap, and honor STOP and a Do-Not-Contact list checked again at send time, not just at enrollment.
-- Sticky sender mapping, so a lead always hears from the same number.
-- When a lead replies, **Claude drafts the response; a human taps Send.** Nothing goes out unreviewed.
-- Click-to-call bridging through Twilio: rings your cell, then connects the lead from the number they know.
+### HQ: the agent team in 3D (`engine/hq.py`, `web/jarvis.html`)
+* **A walkable Three.js office** where each agent works at its own desk on live data.
+* Agents type only while their task is running, and an agent raises its hand when it's waiting for an approval.
+* **VR on Meta Quest 2.** It runs in WebXR, with HTTPS pairing through a single-use code. It's verified in Meta's IWER emulator. See `docs/VR.md`.
 
-### MolaBucks Capital HQ: the agent team in 3D (`engine/hq.py`, `web/jarvis.html`)
-- **Six AI employees under a JARVIS "CEO":**
-  - Hunter: acquisitions
-  - Closer: dispositions
-  - Dispositions: buyer matching
-  - Follow-up
-  - Front Desk: communications intake
-  - Finance
-- **A durable task queue in SQLite.** Each task has an owner, status, attempts and an event log. Workers lease a task so no two processes run the same one. Failures retry with backoff and are marked **blocked** with a reason instead of being silently skipped.
-- **A task only counts as done when its result checks out.** JARVIS turns a monthly revenue goal into a plan by working backward from collected fees through closings, contracts, offers and conversations, then assigns the day's work.
-- **Approval levels:**
-  - Internal work runs on its own.
-  - Drafts wait for review.
-  - Outside commitments, such as launching a campaign or spending money, go to an approval station. Each approval covers only the exact parameters you reviewed, and no agent can approve its own work.
-- **A walkable 3D office built on Three.js.** It shows the system's real state:
-  - Agents type only while their task is running.
-  - An agent waiting on approval raises its hand.
-  - Failed agents slump under a red marker.
-  - The HUD, minimap and objectives are built from live data.
-- **Quality and fallback:** graphics presets adjust automatically to the frame rate. Devices without 3D support get a plain Operations list instead.
-
-### VR on Meta Quest 2 (`engine/web.py`, `run.py web`)
-- `run.py web` serves HQ over HTTPS on the local network, using the same `crm_pull` / `crm_push` sync as the desktop link. Devices pair with a single-use 6-digit code.
-- **WebXR mode:**
-  - Smooth movement and snap turn.
-  - Collision.
-  - In-world menus and panels.
-  - Approvals with confirmation.
-- **VR-specific rendering profile:** merged geometry and no post-processing. This cut lobby draw calls from 528 to 135.
-- **Verified in Meta's IWER Quest 2 emulator; not yet tested on a physical headset.** The setup guide and test checklist are in [`docs/VR.md`](docs/VR.md).
-
-### Integrations (`mcp_server.py`)
-- An **MCP server** exposes the engine to Claude Desktop ("add Lee County", "how many new leads today?") and syncs the JARVIS web app with the local CRM (newest-timestamp-wins merge).
+### Integrations
+* **MCP server** (`mcp_server.py`). It exposes the engine to Claude Desktop and syncs the JARVIS web app with the local CRM (the newest timestamp wins).
 
 ## Engineering notes
-- **160 automated checks** across four suites:
-  - `tests/test_hunter.py`: dedupe, scoring, skip-trace import.
-  - `tests/test_outreach.py`: DNC enforcement, drip timing, sender mapping.
-  - `tests/test_hq.py`: task leasing, retries, blocked dependencies, approval binding.
-  - `tests/test_web.py`: pairing and the HTTPS sync server.
-- Scrapers pace their requests, never bypass CAPTCHAs or logins (they raise `Blocked` instead), and never fabricate fields.
-- All lead and contact data stays local in SQLite. Nothing personal is in this repo.
+
+* **900+ automated checks in 26 test suites** (`tests/`), covering:
+  + the task queue, leases, retries and approval binding,
+  + DNC enforcement,
+  + scoring and dedupe,
+  + CRM provenance,
+  + email and Instagram workflows,
+  + the voice bridge,
+  + the web server.
+* Two suites (`test_owner_lookup`, `test_clerk_pinellas`) replay real public-record pages that stay off GitHub, so they skip when those fixtures are missing.
+* Scrapers pace their requests, never bypass CAPTCHAs or logins (they raise `Blocked` instead), and never fabricate fields.
+* **No secrets or personal data in this repo.**
+  + API keys live only in a local `.env`. `.env.example` lists the variable names.
+  + OAuth tokens, TLS keys, databases, lead and client data, and logs are all git-ignored.
 
 ## Run it
 
-```powershell
+```
 pip install -r requirements.txt
 playwright install chromium
-copy .env.example .env          # add your Anthropic key; Twilio keys optional
+copy .env.example .env          # add your Anthropic key; other keys optional
 python run.py scrape            # pull every configured county
 python run.py voice             # needs requirements-voice.txt
 python run.py web               # serve HQ to a Quest / other devices on your network
-python -m tests.test_hunter     # run the tests (also test_outreach, test_hq, test_web)
+python -m tests.test_hq         # run any suite in tests/
 ```
 
-Full Windows setup, county configuration, and texting compliance notes are in [`docs/SETUP.md`](docs/SETUP.md). How HQ works is in [`docs/HQ.md`](docs/HQ.md), VR setup is in [`docs/VR.md`](docs/VR.md), and the system design and roadmap are in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). The Hunter's scoring model is in [`docs/HUNTER.md`](docs/HUNTER.md), and the outreach rules are in [`docs/OUTREACH.md`](docs/OUTREACH.md).
+* Full Windows setup is in `docs/SETUP.md`.
+* The JARVIS 2.0 design is in `docs/JARVIS2.md`.
+* HQ is in `docs/HQ.md`, VR in `docs/VR.md`, and the AI Sidekicks assistant in `docs/AISIDEKICKS.md`.
+* The Hunter's scoring model is in `docs/HUNTER.md`, and the outreach rules are in `docs/OUTREACH.md`.
 
 ---
 

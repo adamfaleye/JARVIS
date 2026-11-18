@@ -34,9 +34,23 @@ voice:
   wake_model: hey_jarvis       # say "Hey Jarvis"
   wake_threshold: 0.5          # raise to 0.6-0.7 if it wakes by accident; lower if it misses you
   whisper_model: base.en       # small.en = more accurate, slower
-  followup_seconds: 6          # keep listening this long for a follow-up without the wake word
+  followup_without_wake_word: false  # false = every request starts with "Hey Jarvis" (he won't answer other voices); true = keep listening for follow-ups
+  followup_seconds: 6          # only used when followup_without_wake_word is true
   tts: elevenlabs              # elevenlabs = your ElevenLabs voice; edge = free British voice; sapi = built-in Windows voice
   elevenlabs_voice_id: wDsJlOXPqcvIUKdLXjDs
   elevenlabs_model: eleven_flash_v2_5   # fast, low-latency model; eleven_multilingual_v2 = slower, richer
+  agent_voices:                # each employee's own ElevenLabs voice (desktop voice and live calls); others use JARVIS's voice
+    sdr: bIHbv24MWmeRgasZH58o        # Will: relaxed, upbeat
+    ae: cjVigY5qzO86Huf0OWal         # Eric: smooth, trustworthy
+    marketing: cgSgspJ2msm6clMCkdW9  # Jessica: bright, warm
+    architect: CwhRBWXzGAHq8TQ4Fs17  # Roger: laid-back, resonant
+    hunter: iP95p4xoKVk53GoZ742B     # Chris: down-to-earth
+    chief_of_staff: IKne3meq5aSn9XLyUdCD  # Charlie: confident, energetic
+    research: SAz9YHcvj6GT2YYXdXww   # River: calm, informative
+    pm: SAz9YHcvj6GT2YYXdXww
+    finance: SAz9YHcvj6GT2YYXdXww
   edge_voice: en-GB-RyanNeural # backup if ElevenLabs is unreachable or out of credits
   sapi_rate: 185
+
+# When approved AI Sidekicks campaign emails may go out (days: 0=Mon..6=Sun, hours 0-24, your time zone). Set by Mola: every day, 7am to 8pm.
+outreach_window: {days: [0, 1, 2, 3, 4, 5, 6], start: 7, end: 20}

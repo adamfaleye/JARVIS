@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assistant</title>
+<style>
+:root{--bg:#faf7f4;--card:#fff;--ink:#1f1a17;--muted:#6f655e;--line:#e8e0d8;--accent:#8e3b5e;--accent-2:#f6e9ef;--ok:#2f7d4f;--ok-2:#e6f4ea;
+--warn:#a86a00;--warn-2:#fff3dc;--bad:#b3261e;--bad-2:#fde8e6;--info:#2b5ea7;--info-2:#e7effa;--r:12px}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--ink)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 13px}
+button:hover{border-color:#cdbfb3}button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.primary:hover{filter:brightness(1.07)}button.danger{color:var(--bad);border-color:#efc6c2}button.ghost{background:transparent;border-color:transparent}
+button:disabled{opacity:.5;cursor:not-allowed}
+input,select,textarea{border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:#fff;width:100%}
+textarea{min-height:70px;resize:vertical}label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+header{display:flex;align-items:center;gap:14px;padding:12px 20px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.brand{font-weight:700;letter-spacing:.2px}.brand small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+nav{display:flex;gap:4px;flex-wrap:wrap;flex:1}nav button{border:none;background:none;padding:8px 12px;border-radius:8px;color:var(--muted)}
+nav button.on{background:var(--accent-2);color:var(--accent);font-weight:600}
+.badge{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:#f1ece7;color:var(--muted);white-space:nowrap}
+.b-ok{background:var(--ok-2);color:var(--ok)}.b-warn{background:var(--warn-2);color:var(--warn)}.b-bad{background:var(--bad-2);color:var(--bad)}
+.b-info{background:var(--info-2);color:var(--info)}.b-acc{background:var(--accent-2);color:var(--accent)}
+main{max-width:1180px;margin:0 auto;padding:18px 20px 60px}
+.banner{padding:10px 14px;border-radius:10px;margin-bottom:12px;font-size:14px}
+.banner.warn{background:var(--warn-2);color:#6b4500}.banner.bad{background:var(--bad-2);color:#7d1a14}.banner.info{background:var(--info-2);color:#1f4479}
+h1{font-size:22px;margin:4px 0 14px}h2{font-size:16px;margin:22px 0 8px;display:flex;align-items:center;gap:8px}h3{font-size:15px;margin:16px 0 6px}
+.muted{color:var(--muted)}.small{font-size:13px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.grow{flex:1}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.req{cursor:pointer;transition:box-shadow .15s}.req:hover{box-shadow:0 3px 14px rgba(60,30,20,.08)}
+.req .who{font-weight:600}.req .svc{margin:6px 0 2px}.req .when{font-size:14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.empty{padding:16px;border:1px dashed var(--line);border-radius:var(--r);color:var(--muted);font-size:14px}
+.kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}.kpi .card b{display:block;font-size:24px}
+.overlay{position:fixed;inset:0;background:rgba(30,20,15,.35);display:flex;justify-content:flex-end;z-index:20}
+.drawer{background:var(--bg);width:min(760px,100%);height:100%;overflow:auto;padding:18px 20px 80px;box-shadow:-10px 0 30px rgba(0,0,0,.12)}
+.steps{display:flex;gap:4px;flex-wrap:wrap;margin:8px 0 14px}.steps span{font-size:11.5px;padding:3px 8px;border-radius:99px;background:#efe8e1;color:#8b8079}
+.steps span.done{background:var(--ok-2);color:var(--ok)}.steps span.now{background:var(--accent);color:#fff}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:640px){.two{grid-template-columns:1fr}header{flex-wrap:wrap;padding:10px 14px}nav{order:3;flex:0 0 100%;flex-wrap:nowrap;overflow-x:auto}nav button{white-space:nowrap}main{padding:14px}}
+.actions{padding:4px 0 14px;border-bottom:1px solid var(--line);margin-bottom:6px}
+.box{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:10px}
+.box.accent{border-color:#e3c4d2;background:#fffafc}
+.inbox{display:grid;grid-template-columns:320px 1fr;gap:12px;min-height:70vh}@media(max-width:800px){.inbox{grid-template-columns:1fr}}
+.convs{background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:auto;max-height:78vh}
+.conv{padding:11px 13px;border-bottom:1px solid var(--line);cursor:pointer}.conv.on{background:var(--accent-2)}.conv:hover{background:#fbf6f2}
+.thread{background:#fff;border:1px solid var(--line);border-radius:var(--r);display:flex;flex-direction:column;max-height:78vh}
+.msgs{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:78%;padding:9px 12px;border-radius:14px;white-space:pre-wrap;word-wrap:break-word}
+.msg.in{background:#f1ece7;align-self:flex-start;border-bottom-left-radius:4px}
+.msg.out{background:var(--accent-2);align-self:flex-end;border-bottom-right-radius:4px}
+.msg.out.pending{background:#fff;border:1.5px dashed #d7a9bd}.msg.out.blocked{background:#fff;border:1.5px dashed #e3a39d}
+.msg .meta{font-size:11.5px;color:var(--muted);margin-top:4px}
+.compose{border-top:1px solid var(--line);padding:10px;display:flex;gap:8px}.compose textarea{min-height:44px}
+table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+th,td{text-align:left;padding:9px 11px;border-bottom:1px solid var(--line);font-size:14px;vertical-align:top}th{background:#fbf8f5;color:var(--muted);font-weight:600;font-size:13px}
+tr.click{cursor:pointer}tr.click:hover td{background:#fcf8f5}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#2b2320;color:#fff;padding:10px 16px;border-radius:10px;z-index:50;max-width:90%}
+.login{max-width:360px;margin:12vh auto;background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px}
+.switch{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.switch:last-child{border-bottom:none}
+.switch .t{flex:1}.switch .t b{display:block;font-weight:600}.copy{font-family:ui-monospace,Consolas,monospace;font-size:13px;background:#fbf8f5;border:1px solid var(--line);border-radius:8px;padding:10px;white-space:pre-wrap}
+.photos{display:flex;gap:8px;flex-wrap:wrap}.photos a{font-size:13px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script nonce="{{NONCE}}">
+"use strict";
+const S = {me:null, csrf:"", view:"requests", queue:null, convId:null, labels:{}, settings:{}, timer:null, kbData:null};
+let P = {owner:"the owner", owner_possessive:"the owner's", calendar:"your calendar", brand:"", subtitle:"", notes_label:"Notes", booking_noun:"appointment",
+  requests_label:"Requests", baseline_hint:"", calendar_note:""};
+const B = {brand:"Assistant"};
+function T(str){
+  if (typeof str!=="string" || str.indexOf("{")<0) return str;
+  const noun=P.booking_noun||"appointment";
+  const m={owner:P.owner, owner_s:P.owner_possessive, cal:P.calendar, brand:P.brand||B.brand, subtitle:P.subtitle||"", notes_label:P.notes_label,
+    noun:noun, Noun:noun.charAt(0).toUpperCase()+noun.slice(1), requests_label:P.requests_label, baseline_hint:P.baseline_hint||"", calendar_note:P.calendar_note||""};
+  return str.replace(/\{(\w+)\}/g,(all,k)=>Object.prototype.hasOwnProperty.call(m,k)?String(m[k]):all);
+}
+const $ = (sel, root=document) => root.querySelector(sel);
+function el(tag, attrs={}, ...kids){
+  const e = document.createElement(tag);
+  for (const [k,v] of Object.entries(attrs||{})){
+    if (v===null||v===undefined||v===false) continue;
+    if (k==="class") e.className=v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (k==="html") {} else e.setAttribute(k, v===true?"":(typeof v==="string"&&k!=="value"&&k!=="href"?T(v):v));
+  }
+  for (const k of kids.flat()) if (k!==null && k!==undefined && k!==false) e.append(k instanceof Node ? k : document.createTextNode(T(String(k))));
+  return e;
+}
+function prompt_T(a,b){ return window.prompt(T(a), b===undefined?undefined:b); }
+function toast(t){ const d=el("div",{class:"toast"},T(t)); document.body.append(d); setTimeout(()=>d.remove(), 3800); }
+async function api(path, body){
+  const opt = body===undefined ? {credentials:"same-origin"} : {method:"POST", credentials:"same-origin",
+    headers:{"Content-Type":"application/json","X-CSRF":S.csrf}, body:JSON.stringify(body)};
+  const r = await fetch(path, opt); let j={}; try{ j=await r.json(); }catch(e){}
+  if (r.status===401 && j.code==="signin"){ S.me=null; renderLogin(); throw new Error("Signed out"); }
+  if (!r.ok) throw new Error(j.error || ("Error "+r.status));
+  return j;
+}
+async function act(path, body, okMsg){ try{ const r=await api(path, body); if(okMsg) toast(okMsg); return r; }catch(e){ toast(e.message); throw e; } }
+const ago = ts => { if(!ts) return ""; const s=(Date.now()-new Date(ts))/1000; if(s<60) return "just now"; if(s<3600) return Math.floor(s/60)+"m ago"; if(s<86400) return Math.floor(s/3600)+"h ago"; return Math.floor(s/86400)+"d ago"; };
+const fmtTime = ts => ts ? new Date(ts).toLocaleString([], {month:"short",day:"numeric",hour:"numeric",minute:"2-digit"}) : "";
+const STATUS_CLASS = {AWAITING_AVAILABILITY:"b-warn",DRAFT_CREATED:"b-warn",READY_FOR_OWNER:"b-acc",OWNER_REVIEWING:"b-acc",INFORMATION_NEEDED:"b-info",
+  APPROVED:"b-ok",AWAITING_CALENDAR_ENTRY:"b-ok",ENTERED_IN_CALENDAR:"b-ok",CONFIRMED:"b-ok",COMPLETED:"",DECLINED:"b-bad",CANCELLED:"b-bad",NEW_INQUIRY:"",QUALIFYING:""};
+const badge = (t, c="") => el("span",{class:"badge "+c}, t);
+const isOwner = () => S.me && S.me.role==="owner";
+
+// ------------------------------------------------------------------ shell
+async function boot(){
+  try{ const b=await (await fetch("/api/brand",{credentials:"same-origin"})).json(); B.brand=b.brand||B.brand; document.title=B.brand+" · Assistant"; }catch(e){}
+  try{ const j=await api("/api/me"); S.me=j.user; S.csrf=j.csrf; S.labels=j.labels; S.settings=j.settings; P=Object.assign(P, j.profile||{}); S.hasOperator=j.has_operator; render(); }
+  catch(e){ renderLogin(); }
+}
+function renderLogin(){
+  clearInterval(S.timer);
+  const u=el("input",{autocomplete:"username"}), p=el("input",{type:"password",autocomplete:"current-password"}), msg=el("div",{class:"small",style:"color:var(--bad);min-height:20px;margin-top:8px"});
+  const go=async ev=>{ ev.preventDefault(); try{ const j=await api("/api/login",{username:u.value,password:p.value}); S.csrf=j.csrf; await boot(); }catch(e){ msg.textContent=e.message; } };
+  $("#app").replaceChildren(el("form",{class:"login",onsubmit:go}, el("div",{class:"brand",style:"font-size:20px"},B.brand,el("small",{},"Instagram assistant · AI Sidekicks")),
+    el("label",{},"Username"),u,el("label",{},"Password"),p, el("div",{style:"margin-top:16px"}, el("button",{class:"primary",type:"submit",style:"width:100%"},"Sign in")), msg));
+  u.focus();
+}
+const VIEWS=[["requests","{requests_label}"],["inbox","Instagram Inbox"],["customers","Customers"],["kb","Knowledge Base"],["analytics","Analytics"],["settings","Settings"]];
+function render(){
+  const nav=el("nav",{}, VIEWS.map(([k,l])=>el("button",{class:S.view===k?"on":"",onclick:()=>{S.view=k; render();}}, l, k==="requests"&&S.queue&&S.queue.attention?" ("+S.queue.attention+")":"")));
+  const who=el("div",{class:"row small"}, el("span",{class:"muted"}, S.me.name+(S.me.role==="operator"?" · AI Sidekicks":"")), el("button",{class:"ghost",onclick:async()=>{await api("/api/logout",{}); renderLogin();}},"Sign out"));
+  const main=el("main",{id:"main"});
+  $("#app").replaceChildren(el("header",{}, el("div",{class:"brand"},"{brand}",el("small",{},"{subtitle}")), nav, who), main);
+  banners(main);
+  const v={requests:viewRequests, inbox:viewInbox, customers:viewCustomers, kb:viewKB, analytics:viewAnalytics, settings:viewSettings}[S.view];
+  const box=el("div",{id:"view"}); main.append(box); v(box);
+  clearInterval(S.timer);
+  S.timer=setInterval(()=>{ if(document.hidden||$(".overlay")) return; if(S.view==="requests") viewRequests($("#view")); if(S.view==="inbox") refreshInbox(); }, S.view==="inbox"?5000:10000);
+}
+function banners(main){
+  const st=S.settings||{};
+  if (st.automation_paused==="1") main.append(el("div",{class:"banner bad"},"AI automation is paused. Messages are still collected; the assistant isn't replying. Resume it in Settings."));
+  if (st.live_send!=="1") main.append(el("div",{class:"banner warn"},"Test mode: nothing is sent to Instagram until the pilot starts. Replies show here as held or test messages."));
+}
+
+// ------------------------------------------------------------------ Appointment Requests (primary view)
+async function viewRequests(box){
+  if(!box) return;
+  let q; try{ q=await api("/api/queue"); }catch(e){ return; }
+  S.queue=q;
+  const navBtn=document.querySelector("nav button"); if(navBtn) navBtn.textContent=T("{requests_label}")+(q.attention?" ("+q.attention+")":"");
+  const parts=[el("h1",{}, q.attention ? `${q.attention} request${q.attention>1?"s":""} need${q.attention>1?"":"s"} your attention` : "You're all caught up")];
+  if(!q.attention) parts.push(el("p",{class:"muted"},"New appointment drafts from Instagram show up here. Nothing is booked until you approve it and confirm it in {cal}."));
+  for (const g of q.groups){
+    if (!g.items.length && ["qualifying","info_needed"].includes(g.key)) continue;
+    parts.push(el("h2",{}, g.label, badge(g.items.length)));
+    if (!g.items.length){ parts.push(el("div",{class:"empty"},"Nothing here.")); continue; }
+    parts.push(el("div",{class:"grid"}, g.items.map(card)));
+  }
+  box.replaceChildren(...parts);
+}
+function card(a){
+  const f=a.fields, c=a.customer||{};
+  const when=[f.preferred_date, f.preferred_time].filter(Boolean).join(" · ");
+  return el("div",{class:"card req",onclick:()=>openAppt(a.id)},
+    el("div",{class:"row"}, el("span",{class:"who grow"}, f.customer_name||c.name||"Name not given yet"), a.is_test?badge("Test",""):null, badge(a.status_label, STATUS_CLASS[a.status])),
+    el("div",{class:"small muted"}, f.instagram_username||("@"+(c.username||"unknown"))),
+    el("div",{class:"svc"}, (a.service.label||"Service not chosen")+(a.service.price?" · "+a.service.price:"")),
+    el("div",{class:"when"}, when||el("span",{class:"muted"},"No date yet"), f.alt_date?el("span",{class:"muted"}," (backup "+f.alt_date+(f.alt_time?", "+f.alt_time:"")+")"):null),
+    el("div",{class:"chips"},
+      ["NEW_INQUIRY","QUALIFYING"].includes(a.status)?null:badge(a.availability==="verified"?"Availability verified":"Availability: awaiting your check", a.availability==="verified"?"b-ok":"b-warn"),
+      (a.missing||[]).map(m=>badge("Missing: "+({customer_name:"name",service:"service",preferred_date:"date",preferred_time:"time",photos:"photos"}[m]||m),"b-info")),
+      a.escalation_reason?badge(a.escalation_reason,"b-bad"):null,
+      el("span",{class:"small muted",style:"margin-left:auto"}, ago(a.draft_created_at||a.created_at))));
+}
+const PATH=["DRAFT_CREATED","AWAITING_AVAILABILITY","READY_FOR_OWNER","APPROVED","AWAITING_CALENDAR_ENTRY","ENTERED_IN_CALENDAR","CONFIRMED"];
+async function openAppt(id){
+  let a; try{ a=await api(`/api/appointments/${id}?review=1`); }catch(e){ return toast(e.message); }
+  const close=()=>{ ov.remove(); if(S.view==="requests") viewRequests($("#view")); };
+  const ov=el("div",{class:"overlay",onclick:e=>{ if(e.target===ov) close(); }});
+  const d=el("div",{class:"drawer"}); ov.append(d); document.body.append(ov);
+  const reload=async()=>{ ov.remove(); await openAppt(id); };
+  const post=async(action, body, msg)=>{ try{ await api(`/api/appointments/${id}/${action}`, {version:a.version, ...body}); toast(msg); await reload(); }catch(e){ toast(e.message); if(String(e.message).includes("changed")) await reload(); } };
+  const f=a.fields, idx=PATH.indexOf(a.status==="OWNER_REVIEWING"?"READY_FOR_OWNER":a.status);
+  d.append(el("div",{class:"row"}, el("h1",{class:"grow",style:"margin:0"}, f.customer_name||"Appointment request"), el("button",{onclick:close},"Close")),
+    el("div",{class:"row small muted",style:"margin-top:4px"}, badge(a.status_label, STATUS_CLASS[a.status]), a.kind==="consultation"?badge("Consultation","b-acc"):null, a.is_test?badge("Test conversation"):null,
+      el("span",{}, "Request #"+a.id+" · created "+fmtTime(a.created_at))),
+    el("div",{class:"steps"}, PATH.map((s,i)=>el("span",{class: i<idx?"done":(i===idx?"now":"")}, S.labels[s]||s))));
+  if (a.status==="APPROVED"||a.status==="AWAITING_CALENDAR_ENTRY") d.append(el("div",{class:"banner info"},"Approved, but not booked yet. Enter it in {cal}, then record the entry here."));
+  if (a.escalation_reason) d.append(el("div",{class:"banner bad"},"Flagged: "+a.escalation_reason));
+  const acts=el("div",{class:"actions"}); d.append(acts);
+  // ---- details (editable before entry into {cal})
+  const editable=["NEW_INQUIRY","QUALIFYING","DRAFT_CREATED","AWAITING_AVAILABILITY","READY_FOR_OWNER","OWNER_REVIEWING","INFORMATION_NEEDED","APPROVED","AWAITING_CALENDAR_ENTRY"].includes(a.status);
+  const inp={}; const field=(k,label,type="text")=>{ inp[k]=el(type==="textarea"?"textarea":"input",{value:f[k]||"",disabled:!editable}); if(type==="textarea") inp[k].value=f[k]||""; return el("div",{}, el("label",{},label), inp[k]); };
+  const svcSel=el("select",{disabled:!editable}, el("option",{value:""},"Choose…"));
+  let kbs; try{ kbs=(await api("/api/kb")).items.service; }catch(e){ kbs={}; }
+  for (const [k,s] of Object.entries(kbs)) svcSel.append(el("option",{value:k,selected:f.service_key===k}, s.label+(s.consultation?" (consultation)":" · $"+(s.price_cents/100))));
+  inp.service_key=svcSel;
+  d.append(el("h3",{},"Customer"), el("div",{class:"two"}, field("customer_name","Name"), el("div",{}, el("label",{},"Instagram"), el("input",{value:f.instagram_username||"",disabled:true})),
+      field("contact","Contact (only if the customer offered it)")),
+    el("h3",{},"{Noun}"), el("div",{class:"two"}, el("div",{}, el("label",{},"Service"), svcSel),
+      el("div",{}, el("label",{},"Price"), el("input",{value:(a.service.price||"—")+(a.service.price_is_override?" (your exception)":""),disabled:true})),
+      field("preferred_date","Preferred date"), field("preferred_time","Preferred time"), field("alt_date","Backup date"), field("alt_time","Backup time")),
+    el("div",{class:"small muted",style:"margin-top:6px"}, "Duration: "+a.service.duration+(a.service.duration_verified?"":" (add durations in the Knowledge Base)")),
+    field("needs","{notes_label}","textarea"), field("notes","Customer requests / notes","textarea"));
+  if (isOwner()) d.append(el("details",{}, el("summary",{class:"small muted",style:"margin-top:10px;cursor:pointer"},"Pricing exception (only you can set this)"),
+      el("div",{class:"two"}, field("price_override_text","Exception price (e.g. $150)"), field("price_override_reason","Reason"))));
+  if (editable) d.append(el("div",{class:"row",style:"margin-top:10px"}, el("button",{onclick:()=>{ const out={}; for(const k in inp) out[k]=inp[k].value; post("edit",{fields:out},"Saved"); }},"Save changes"),
+    el("span",{class:"small muted"}, a.status==="APPROVED"||a.status==="AWAITING_CALENDAR_ENTRY"?"Changing the booking details after approval voids the approval.":"")));
+  // ---- context
+  const ctx=el("div",{class:"box"}, el("b",{},"AI summary"), el("div",{}, a.summary||"—"),
+    el("div",{class:"small muted",style:"margin-top:6px"}, "AI confidence: "+(a.confidence!=null?Math.round(a.confidence*100)+"%":"—")),
+    a.missing.length?el("div",{class:"chips"}, a.missing.map(m=>badge("Missing: "+m.replace("_"," "),"b-info"))):null,
+    a.questions.length?el("div",{class:"small",style:"margin-top:6px"},"Questions you asked: "+a.questions.join(" · ")):null);
+  if ((f.photos||[]).length) ctx.append(el("div",{class:"photos",style:"margin-top:8px"}, f.photos.map((u,i)=>el("a",{href:u,target:"_blank",rel:"noopener noreferrer"},"Photo "+(i+1)))));
+  d.append(el("h3",{},"Context"), ctx);
+  d.append(el("details",{}, el("summary",{class:"small muted",style:"margin-top:10px;cursor:pointer"},"Conversation ("+a.messages.length+" messages)"),
+    el("div",{class:"box"}, a.messages.map(m=>el("div",{class:"small",style:"margin:4px 0"}, el("b",{}, m.direction==="in"?"Customer: ":(m.author==="owner"?"You: ":"Assistant: ")), m.text||"", m.direction==="out"?el("span",{class:"muted"}," ["+m.status+"]"):null)))));
+  // ---- actions for the current step
+  const st=a.status;
+  if (!isOwner()) acts.append(el("div",{class:"banner info"},"Only {owner} can verify availability, approve or confirm appointments."));
+  else if (["DRAFT_CREATED","AWAITING_AVAILABILITY","READY_FOR_OWNER","OWNER_REVIEWING"].includes(st)){
+    const dt=el("input",{value:(a.verified_slot||[])[0]||f.preferred_date||""}), tm=el("input",{value:(a.verified_slot||[])[1]||f.preferred_time||""});
+    const box=el("div",{class:"box accent"}, el("b",{}, a.availability==="verified"?"✓ Availability verified: "+a.verified_slot.join(" at "):"1. Check {cal}"),
+      el("div",{class:"small muted"},"JARVIS can't see {cal}. Check it yourself, then enter the exact slot you have open."),
+      el("div",{class:"two"}, el("div",{},el("label",{},"Date (as in {cal})"),dt), el("div",{},el("label",{},"Time (as in {cal})"),tm)),
+      el("div",{class:"row",style:"margin-top:8px"},
+        f.alt_date?el("button",{onclick:()=>{dt.value=f.alt_date; tm.value=f.alt_time||f.preferred_time||"";}},"Use backup day"):null,
+        el("button",{class:a.availability==="verified"?"":"primary",onclick:()=>post("verify_availability",{date:dt.value,time:tm.value},"Availability verified")},"Mark availability verified")));
+    acts.append(box);
+    acts.append(el("div",{class:"box accent"}, el("b",{},"2. Approve"), el("div",{class:"small muted"},"Approval doesn't book anything. Next you'll enter it in {cal}."),
+      el("div",{class:"row",style:"margin-top:8px"}, el("button",{class:"primary",disabled:a.availability!=="verified"||a.missing.length>0,onclick:()=>post("approve",{},"Approved — now enter it in {cal}")},"Approve"))));
+  } else if (["APPROVED","AWAITING_CALENDAR_ENTRY"].includes(st)){
+    const s=a.service; const txt=`${f.customer_name} (${f.instagram_username||""})\n${s.label} — ${s.price}\n${f.preferred_date} at ${f.preferred_time}${f.needs?"\n"+P.notes_label+": "+f.needs:""}${f.notes?"\nNotes: "+f.notes:""}${f.contact?"\nContact: "+f.contact:""}`;
+    const chk=el("input",{type:"checkbox",style:"width:auto"}), ref=el("input",{placeholder:"Optional: anything that identifies it in {cal}"});
+    acts.append(el("div",{class:"box accent"}, el("b",{},"3. Enter it in {cal}"), el("div",{class:"copy",style:"margin-top:6px"}, txt),
+      el("div",{class:"row",style:"margin-top:6px"}, el("button",{onclick:()=>{navigator.clipboard&&navigator.clipboard.writeText(txt); toast("Copied");}},"Copy details")),
+      el("label",{class:"row",style:"color:var(--ink)"}, chk, "I entered this in {cal}"), ref,
+      el("div",{class:"row",style:"margin-top:8px"}, el("button",{class:"primary",onclick:()=>{ if(!chk.checked) return toast("Tick the box once it's in {cal}."); post("mark_entered",{attest:true,calendar_ref:ref.value},"Recorded"); }},"Mark entered into {cal}"))));
+  } else if (st==="ENTERED_IN_CALENDAR"){
+    const chk=el("input",{type:"checkbox",style:"width:auto"}), send=el("input",{type:"checkbox",style:"width:auto",checked:true});
+    const msg=el("textarea",{}); msg.value=a.confirmation_preview;
+    acts.append(el("div",{class:"box accent"}, el("b",{},"4. Confirm"), el("div",{class:"small muted"},"Open {cal} and make sure it's there."),
+      el("label",{class:"row",style:"color:var(--ink)"}, chk, "I can see this appointment in {cal}"),
+      el("label",{class:"row",style:"color:var(--ink)"}, send, "Send the customer this confirmation"), msg,
+      el("div",{class:"row",style:"margin-top:8px"}, el("button",{class:"primary",onclick:()=>{ if(!chk.checked) return toast("Check {cal} first, then tick the box."); post("mark_confirmed",{attest:true,send_confirmation:send.checked,message:msg.value},"Confirmed"); }},"Mark confirmed"))));
+  } else if (st==="CONFIRMED"){
+    acts.append(el("div",{class:"box"}, el("b",{},"✓ Confirmed in {cal} "+fmtTime(a.confirmed_at)), el("div",{class:"row",style:"margin-top:8px"}, el("button",{onclick:()=>post("complete",{},"Marked completed")},"Mark completed"))));
+  } else if (st==="INFORMATION_NEEDED"){
+    acts.append(el("div",{class:"banner info"},"Waiting on the customer. It comes back to your queue when they reply."));
+  }
+  if (isOwner()){
+    const more=el("div",{class:"row",style:"margin-top:10px"});
+    if (["NEW_INQUIRY","QUALIFYING","DRAFT_CREATED","AWAITING_AVAILABILITY","READY_FOR_OWNER","OWNER_REVIEWING","APPROVED","AWAITING_CALENDAR_ENTRY"].includes(st))
+      more.append(el("button",{onclick:()=>{ const q=prompt_T("Question for the customer (sent from you):"); if(q) post("request_info",{question:q},"Question queued"); }},"Request more info"));
+    if (["READY_FOR_OWNER","OWNER_REVIEWING","APPROVED","AWAITING_CALENDAR_ENTRY","INFORMATION_NEEDED","DECLINED"].includes(st))
+      more.append(el("button",{onclick:()=>post("return_to_pending",{},"Back to pending")},"Return to pending"));
+    if (!["DECLINED","CANCELLED","COMPLETED","ENTERED_IN_CALENDAR","CONFIRMED"].includes(st))
+      more.append(el("button",{class:"danger",onclick:()=>{ const r=prompt_T("Reason (internal):"); if(r===null) return; const m=prompt_T("Optional message to the customer (leave empty to send nothing):",""); post("decline",{reason:r,message:m||""},"Declined"); }},"Decline"));
+    if (!["DECLINED","CANCELLED","COMPLETED"].includes(st))
+      more.append(el("button",{class:"danger",onclick:()=>{ const r=prompt_T(["ENTERED_IN_CALENDAR","CONFIRMED"].includes(st)?"Reason — and remember to cancel it in {cal} too:":"Reason:"); if(r===null) return; post("cancel",{reason:r},"Cancelled"); }},"Cancel"));
+    acts.append(more);
+  }
+  // ---- notes and history
+  const note=el("textarea",{placeholder:"Internal note (never sent to the customer)"});
+  d.append(el("h3",{},"Internal notes"), ...a.notes.map(n=>el("div",{class:"small",style:"margin:4px 0"}, el("b",{}, n.author+" · "+fmtTime(n.at)+": "), n.text)), note,
+    el("button",{style:"margin-top:6px",onclick:()=>post("note",{text:note.value},"Note added")},"Add note"),
+    el("h3",{},"History"), el("div",{class:"small"}, a.events.map(e=>el("div",{style:"margin:3px 0"}, el("span",{class:"muted"}, fmtTime(e.at)+" · "+e.actor+" · "), e.action.replace(/_/g," "), e.to_status&&e.to_status!==e.from_status?" → "+(S.labels[e.to_status]||e.to_status):""))));
+}
+
+// ------------------------------------------------------------------ Instagram Inbox
+async function viewInbox(box){
+  box.replaceChildren(el("div",{class:"inbox"}, el("div",{class:"convs",id:"convs"}), el("div",{class:"thread",id:"thread"}, el("div",{class:"empty",style:"margin:14px"},"Pick a conversation."))));
+  box.append(simulator());
+  await refreshInbox();
+}
+function simulator(){
+  const who=el("input",{value:"tester",style:"max-width:160px"}), txt=el("input",{placeholder:"Type a customer message to test the assistant…"});
+  const go=async()=>{ if(!txt.value.trim()) return; await act("/api/simulate",{sender:who.value,text:txt.value}); txt.value=""; await refreshInbox(); };
+  txt.addEventListener("keydown",e=>{ if(e.key==="Enter") go(); });
+  return el("div",{class:"box",style:"margin-top:12px"}, el("b",{},"Test the assistant"), el("div",{class:"small muted"},"Test conversations go through the same assistant and appointment drafts, are marked Test, and are never sent to Instagram."),
+    el("div",{class:"row",style:"margin-top:8px"}, who, el("div",{class:"grow"},txt), el("button",{class:"primary",onclick:go},"Send test")));
+}
+async function refreshInbox(){
+  const list=$("#convs"); if(!list) return;
+  let j; try{ j=await api("/api/conversations"); }catch(e){ return; }
+  list.replaceChildren(...(j.items.length?j.items.map(c=>el("div",{class:"conv"+(S.convId===c.id?" on":""),onclick:()=>{S.convId=c.id; refreshInbox();}},
+    el("div",{class:"row"}, el("b",{class:"grow"}, c.name||("@"+(c.username||c.igsid))), c.unread?badge(c.unread,"b-acc"):null),
+    el("div",{class:"small muted",style:"white-space:nowrap;overflow:hidden;text-overflow:ellipsis"}, c.last_text||""),
+    el("div",{class:"chips"}, badge(c.mode==="human"?"You have it":"AI", c.mode==="human"?"b-info":"b-ok"), c.status==="escalated"?badge("Escalated","b-bad"):null,
+      c.drafts?badge(c.drafts+" to review","b-warn"):null, c.is_test?badge("Test"):null, el("span",{class:"small muted",style:"margin-left:auto"}, ago(c.updated_at))))) : [el("div",{class:"empty",style:"margin:12px"},"No conversations yet.")]));
+  if (S.convId) await renderThread(S.convId);
+}
+async function renderThread(cid){
+  const t=$("#thread"); if(!t) return;
+  let j; try{ j=await api(`/api/conversations/${cid}`); }catch(e){ return; }
+  const c=j.conversation;
+  const scroll=$(".msgs",t); const atBottom=!scroll||scroll.scrollHeight-scroll.scrollTop-scroll.clientHeight<60;
+  if (document.activeElement && t.contains(document.activeElement) && document.activeElement.tagName==="TEXTAREA") return; // don't wipe what she's typing
+  const msgs=el("div",{class:"msgs"}, j.messages.map(m=>bubble(m)));
+  const ta=el("textarea",{placeholder: j.window_open||c.igsid.startsWith("test:")?"Write a reply as {owner}…":"Instagram's 24-hour window has closed — reply from the Instagram app."});
+  const head=el("div",{class:"row",style:"padding:10px 12px;border-bottom:1px solid var(--line)"},
+    el("div",{class:"grow"}, el("b",{}, c.name||("@"+(c.username||c.igsid))), el("div",{class:"small muted"}, (c.username?"@"+c.username:"")+(c.escalation_reason?" · "+c.escalation_reason:""))),
+    j.appointments.length?el("button",{onclick:()=>openAppt(j.appointments[0].id)},"Request: "+j.appointments[0].status_label):null,
+    c.mode==="human" ? el("button",{class:"primary",onclick:async()=>{await act(`/api/conversations/${cid}/release`,{},"Returned to the AI"); refreshInbox();}},"Return to AI")
+                     : el("button",{onclick:async()=>{await act(`/api/conversations/${cid}/takeover`,{},"You have this conversation; AI paused here"); refreshInbox();}},"Take over"),
+    c.mode!=="human"?el("button",{class:"ghost",title:"Write a fresh AI reply to the last message",onclick:async()=>{await act(`/api/conversations/${cid}/redraft`,{},"New draft ready"); refreshInbox();}},"Redraft"):null);
+  const send=async()=>{ if(!ta.value.trim()) return; await act(`/api/conversations/${cid}/send`,{text:ta.value,takeover:true},"Queued"); ta.value=""; ta.blur(); refreshInbox(); };
+  t.replaceChildren(head, msgs, el("div",{class:"compose"}, ta, el("button",{class:"primary",onclick:send},"Send")),
+    el("div",{class:"small muted",style:"padding:0 12px 10px"}, c.mode==="human"?"You have this conversation. The AI won't reply here until you return it.":"Sending a reply yourself takes over the conversation."));
+  if (atBottom) msgs.scrollTop=msgs.scrollHeight;
+}
+function bubble(m){
+  const out=m.direction==="out"; const pending=out&&["draft","blocked","held","failed"].includes(m.status);
+  const who=out?({ai:"Assistant",ai_reviewed:"Assistant (you approved)",owner:"You",operator:"Operator",system:"System"}[m.author]||m.author):"Customer";
+  const st={draft:"Draft — waiting for you",blocked:"Blocked",held:"Not sent",failed:"Failed",queued:"Sending…",sending:"Sending…",sent:"Sent",simulated:"Test (not sent to Instagram)",discarded:"Discarded",deleted:"Deleted by customer",received:""}[m.status]||m.status;
+  const b=el("div",{class:"msg "+(out?"out":"in")+(pending?(m.status==="blocked"?" blocked":" pending"):"")}, m.text||"",
+    (m.attachments||[]).map(a=>el("div",{}, el("a",{href:a.url,target:"_blank",rel:"noopener noreferrer"},"["+(a.type||"attachment")+"]"))),
+    el("div",{class:"meta"}, who+" · "+fmtTime(m.sent_at||m.created_at)+(st?" · "+st:"")+(m.hold_reason?" · "+m.hold_reason:"")+(m.error?" · "+m.error:"")));
+  if (out && ["draft","blocked","held","failed"].includes(m.status)){
+    const edit=()=>{ const ta=el("textarea",{}); ta.value=m.text||""; b.replaceChildren(ta, el("div",{class:"row",style:"margin-top:6px"},
+      el("button",{class:"primary",onclick:async()=>{ await act(`/api/messages/${m.id}/approve`,{text:ta.value},"Queued"); refreshInbox(); }},"Send"), el("button",{onclick:()=>refreshInbox()},"Cancel"))); ta.focus(); };
+    b.append(el("div",{class:"row",style:"margin-top:6px"},
+      m.status!=="blocked"?el("button",{class:"primary",onclick:async()=>{ await act(`/api/messages/${m.id}/approve`,{},"Queued"); refreshInbox(); }}, m.status==="draft"?"Send":"Retry"):null,
+      el("button",{onclick:edit},"Edit"), el("button",{class:"ghost",onclick:async()=>{ await act(`/api/messages/${m.id}/discard`,{},"Discarded"); refreshInbox(); }},"Discard")));
+  }
+  return b;
+}
+
+// ------------------------------------------------------------------ Customers
+async function viewCustomers(box){
+  const j=await api("/api/customers");
+  box.replaceChildren(el("h1",{},"Customers"), el("p",{class:"muted small"},"Only what customers shared in Instagram conversations. Contact details are stored only if they offered them."),
+    j.items.length?el("table",{}, el("tr",{}, el("th",{},"Customer"), el("th",{},"Requests"), el("th",{},"Last activity")),
+      j.items.map(c=>el("tr",{class:"click",onclick:()=>openCustomer(c.id)}, el("td",{}, c.name||"—", el("div",{class:"small muted"}, c.username?"@"+c.username:c.igsid), c.is_test?badge("Test"):null),
+        el("td",{}, c.appts), el("td",{class:"small muted"}, ago(c.updated_at))))):el("div",{class:"empty"},"No customers yet."));
+}
+async function openCustomer(id){
+  const j=await api(`/api/customers/${id}`); const c=j.customer;
+  const ov=el("div",{class:"overlay",onclick:e=>{ if(e.target===ov) ov.remove(); }}); const d=el("div",{class:"drawer"}); ov.append(d); document.body.append(ov);
+  const name=el("input",{value:c.name||""}), notes=el("textarea",{}); notes.value=c.notes||"";
+  d.append(el("div",{class:"row"}, el("h1",{class:"grow",style:"margin:0"}, c.name||("@"+(c.username||c.igsid))), el("button",{onclick:()=>ov.remove()},"Close")),
+    el("label",{},"Name"), name, el("label",{},"Notes (private)"), notes,
+    el("div",{class:"row",style:"margin-top:8px"}, el("button",{class:"primary",onclick:async()=>{ await act(`/api/customers/${id}`,{name:name.value,notes:notes.value},"Saved"); }},"Save")),
+    el("h3",{},"Request history"), j.appointments.length?el("div",{}, j.appointments.map(a=>el("div",{class:"box",style:"cursor:pointer",onclick:()=>{ov.remove(); openAppt(a.id);}},
+      el("div",{class:"row"}, el("b",{class:"grow"}, a.service.label||"Request"), badge(a.status_label, STATUS_CLASS[a.status])), el("div",{class:"small muted"}, [a.fields.preferred_date,a.fields.preferred_time].filter(Boolean).join(" · "))))):el("div",{class:"empty"},"None yet."),
+    el("h3",{},"Data"), el("div",{class:"row"},
+      el("button",{onclick:async()=>{ const x=await api(`/api/customers/${id}/export`); const blob=new Blob([JSON.stringify(x,null,2)],{type:"application/json"}); const u=URL.createObjectURL(blob); const a=el("a",{href:u,download:`customer-${id}.json`}); document.body.append(a); a.click(); a.remove(); }},"Export data"),
+      el("button",{class:"danger",onclick:async()=>{ const t=prompt_T("This deletes this customer's messages and appointment history from JARVIS (not from Instagram or {cal}). Type DELETE to confirm."); if(t!=="DELETE") return; await act(`/api/customers/${id}/delete`,{confirm:"DELETE"},"Deleted"); ov.remove(); viewCustomers($("#view")); }},"Delete customer data")));
+}
+
+// ------------------------------------------------------------------ Knowledge Base
+async function viewKB(box){
+  const j=await api("/api/kb"); const it=j.items;
+  const save=async(kind,key,data,version)=>{ await act("/api/kb",{kind,key,data,version},"Saved"); viewKB(box); };
+  const parts=[el("h1",{},"Knowledge Base"), el("p",{class:"muted small"},"The assistant only says what's here. Anything missing, it hands to you instead of guessing.")];
+  if (j.missing.length) parts.push(el("div",{class:"banner warn"},"Not provided yet (the assistant won't state these): "+j.missing.join(", ")+"."));
+  // services
+  parts.push(el("h2",{},"Services and prices"));
+  for (const [key,s] of Object.entries(it.service)){
+    const f={label:el("input",{value:s.label}), price:el("input",{value:s.price_cents!=null?(s.price_cents/100):"",placeholder:"e.g. 180"}), dur:el("input",{value:s.duration_min||"",placeholder:"minutes"}),
+      cons:el("input",{type:"checkbox",style:"width:auto",checked:!!s.consultation}), photos:el("input",{type:"checkbox",style:"width:auto",checked:!!s.requires_photos}),
+      active:el("input",{type:"checkbox",style:"width:auto",checked:s.active!==false}), desc:el("textarea",{}), inc:el("textarea",{}), at:el("textarea",{}), al:el("input",{value:(s.aliases||[]).join(", ")})};
+    f.desc.value=s.description||""; f.inc.value=(s.includes||[]).join("\n"); f.at.value=s.assistant_text||"";
+    parts.push(el("details",{class:"box"}, el("summary",{style:"cursor:pointer"}, el("b",{}, s.label), " · ", s.consultation?"Consultation required":"$"+(s.price_cents/100), s.duration_min?" · "+s.duration_min+" min":el("span",{class:"muted"}," · duration not set")),
+      el("div",{class:"two"}, el("div",{},el("label",{},"Name"),f.label), el("div",{},el("label",{},"Price ($)"),f.price), el("div",{},el("label",{},"Duration (minutes)"),f.dur), el("div",{},el("label",{},"Words customers use"),f.al)),
+      el("div",{class:"row",style:"margin-top:8px"}, el("label",{class:"row",style:"margin:0"},f.cons,"Consultation required (no fixed price)"), el("label",{class:"row",style:"margin:0"},f.photos,"Needs photos"), el("label",{class:"row",style:"margin:0"},f.active,"Offered")),
+      el("label",{},"Description"), f.desc, el("label",{},"What's included (one per line)"), f.inc, el("label",{},"What the assistant says about it"), f.at,
+      s.approved_text?el("div",{class:"small muted",style:"margin-top:6px"},"Your approved first-person wording: “"+s.approved_text+"”"):null,
+      el("div",{class:"row",style:"margin-top:8px"}, el("button",{class:"primary",onclick:()=>save("service",key,{...s,label:f.label.value,price_cents:f.price.value===""?null:Math.round(parseFloat(f.price.value)*100),
+        duration_min:f.dur.value||null,consultation:f.cons.checked,requires_photos:f.photos.checked,active:f.active.checked,description:f.desc.value,includes:f.inc.value.split("\n").map(x=>x.trim()).filter(Boolean),
+        assistant_text:f.at.value,aliases:f.al.value.split(",").map(x=>x.trim()).filter(Boolean)}, s._version)},"Save"))));
+  }
+  // business
+  const b=it.business.profile||{}; const bf={hours:el("textarea",{}),address:el("input",{value:b.address||""}),ncr:el("textarea",{})}; bf.hours.value=b.hours||""; bf.ncr.value=b.new_client_requirements||"";
+  parts.push(el("h2",{},"Business details"), el("div",{class:"box"}, el("label",{},"Hours"), bf.hours, el("label",{},"Business address"), bf.address, el("label",{},"New-client requirements"), bf.ncr,
+    el("div",{class:"row",style:"margin-top:8px"}, el("button",{class:"primary",onclick:()=>save("business","profile",{...b,hours:bf.hours.value||null,address:bf.address.value||null,new_client_requirements:bf.ncr.value||null}, b._version)},"Save"))));
+  // policies, prep, aftercare
+  parts.push(el("h2",{},"Policies, preparation and aftercare"));
+  const pol=[["policy","deposit","Deposit"],["policy","cancellation","Cancellation"],["policy","late_arrival","Late arrival"],["policy","no_show","No-show"],["prep","general","Preparation"],["aftercare","general","Aftercare"]];
+  const pg=el("div",{class:"grid"});
+  for (const [kind,key,label] of pol){ const d=(it[kind]||{})[key]||{}; const ta=el("textarea",{placeholder:"Not provided yet"}); ta.value=d.text||"";
+    pg.append(el("div",{class:"box"}, el("b",{},label), ta, el("div",{style:"margin-top:6px"}, el("button",{onclick:()=>save(kind,key,{text:ta.value.trim()||null}, d._version)},"Save")))); }
+  parts.push(pg);
+  // FAQs
+  parts.push(el("h2",{},"FAQs"));
+  for (const [key,q] of Object.entries(it.faq)){ const qa=el("input",{value:q.question}), an=el("textarea",{}); an.value=q.answer;
+    parts.push(el("div",{class:"box"}, el("label",{},"Question"), qa, el("label",{},"{owner_s} answer"), an, el("div",{class:"row",style:"margin-top:6px"},
+      el("button",{onclick:()=>save("faq",key,{question:qa.value,answer:an.value}, q._version)},"Save"), el("button",{class:"danger",onclick:async()=>{ if(!confirm("Delete this FAQ?")) return; await act("/api/kb/delete",{kind:"faq",key},"Deleted"); viewKB(box); }},"Delete")))); }
+  const nq=el("input",{placeholder:"New question"}), na=el("textarea",{placeholder:"{owner_s} answer"});
+  parts.push(el("div",{class:"box"}, nq, na, el("button",{style:"margin-top:6px",onclick:()=>{ if(!nq.value.trim()) return; save("faq","faq_"+Date.now().toString(36),{question:nq.value,answer:na.value}); }},"Add FAQ")));
+  // voice + escalation
+  const v=it.voice.style||{}; const vn=el("textarea",{}), vs=el("textarea",{}); vn.value=v.notes||""; vs.value=(v.sample_replies||[]).join("\n---\n");
+  parts.push(el("h2",{},"Brand voice"), el("div",{class:"box"}, el("label",{},"How {owner} talks (notes)"), vn, el("label",{},"Sample replies in {owner_s} style (separate with ---)"), vs,
+    el("button",{style:"margin-top:6px",onclick:()=>save("voice","style",{...v,notes:vn.value||null,sample_replies:vs.value.split(/\n---\n/).map(x=>x.trim()).filter(Boolean)}, v._version)},"Save")));
+  const er=it.escalation.rules||{}; const eg=el("div",{});
+  const eIn={}; for (const [k,arr] of Object.entries(er)){ if(k.startsWith("_")) continue; eIn[k]=el("input",{value:(arr||[]).join(", ")}); eg.append(el("label",{}, {always_personal:"Topics you always handle personally"}[k]||k.replace(/_/g," ")), eIn[k]); }
+  parts.push(el("h2",{},"Escalation rules"), el("div",{class:"box"}, el("div",{class:"small muted"},"Messages with these words go straight to you; the AI stops replying in that conversation."), eg,
+    el("button",{style:"margin-top:8px",onclick:()=>{ const o={}; for(const k in eIn) o[k]=eIn[k].value.split(",").map(x=>x.trim()).filter(Boolean); save("escalation","rules",o, er._version); }},"Save")));
+  // discovery
+  const dc=(it.discovery.checklist||{}); const items=dc.items||[];
+  parts.push(el("h2",{},"Setup checklist (remaining discovery)"), el("div",{class:"box"}, items.map((x,i)=>{ const cb=el("input",{type:"checkbox",style:"width:auto",checked:!!x.done});
+    cb.addEventListener("change",()=>{ items[i].done=cb.checked; save("discovery","checklist",{items}, dc._version); }); return el("label",{class:"row",style:"color:var(--ink)"}, cb, x.label); })));
+  box.replaceChildren(...parts);
+}
+
+// ------------------------------------------------------------------ Analytics
+async function viewAnalytics(box, days=30, test=false){
+  const j=await api(`/api/analytics?days=${days}&test=${test?1:0}`);
+  const k=(label,val,sub)=>el("div",{class:"card"}, el("div",{class:"small muted"},label), el("b",{}, val==null?"—":val), sub?el("div",{class:"small muted"},sub):null);
+  const pct=x=>x==null?null:Math.round(x*100)+"%"; const dur=s=>s==null?null:(s<90?Math.round(s)+"s":s<5400?Math.round(s/60)+" min":(s/3600).toFixed(1)+" h");
+  const sel=el("select",{style:"width:auto",onchange:()=>viewAnalytics(box, +sel.value, tst.checked)}, [7,30,90].map(d=>el("option",{value:d,selected:d===days},"Last "+d+" days")));
+  const tst=el("input",{type:"checkbox",style:"width:auto",checked:test,onchange:()=>viewAnalytics(box, +sel.value, tst.checked)});
+  const bl=j.baseline||{}; const bIn={}; const bf=el("div",{class:"two"}, [["dms_per_week","DMs per week"],["minutes_per_day_on_dms","Minutes per day on DMs"],["avg_response_time","Typical response time"],["booking_requests_per_week","Booking requests per week"],["confirmed_from_instagram_per_week","Confirmed bookings from Instagram per week"],["measured_from","Measured from (date)"],["measured_to","Measured to (date)"]].map(([kk,l])=>{ bIn[kk]=el("input",{value:bl[kk]||""}); return el("div",{},el("label",{},l),bIn[kk]); }));
+  box.replaceChildren(el("div",{class:"row"}, el("h1",{class:"grow"},"Analytics"), sel, el("label",{class:"row",style:"margin:0"}, tst, "Include test conversations")),
+    el("p",{class:"muted small"},"Counted from real records only. \"Verified in {cal}\" means you entered and then confirmed it in {cal}."),
+    el("div",{class:"kpi"}, k("Incoming DMs", j.incoming_dms), k("Conversations", j.conversations), k("Booking inquiries", j.booking_inquiries),
+      k("AI replies sent", j.ai_replies_sent), k("Your replies sent", j.owner_replies_sent), k("AI-handled conversations", j.ai_handled_conversations),
+      k("Conversations you handled", j.human_handled_conversations), k("Drafts generated", j.drafts_generated), k("Approved", j.drafts_approved, pct(j.approval_rate)&&pct(j.approval_rate)+" of drafts"),
+      k("Declined", j.drafts_declined, pct(j.decline_rate)&&pct(j.decline_rate)+" of drafts"), k("Entered in {cal}", j.entered_in_calendar), k("Verified in {cal}", j.verified_in_calendar),
+      k("Avg response time", dur(j.avg_response_seconds), j.responses_measured+" replies measured"), k("Avg inquiry → approval", j.avg_inquiry_to_approval_hours!=null?j.avg_inquiry_to_approval_hours+" h":null),
+      k("AI corrections", j.ai_corrections, "drafts you edited before sending"), k("Blocked by safety checks", j.ai_replies_blocked_by_guards), k("Escalations", j.escalations),
+      k("Estimated time saved", j.estimated_minutes_saved+" min", "estimate")),
+    el("p",{class:"small muted"}, j.estimate_note),
+    el("h2",{},"Baseline (before the assistant)"), el("div",{class:"box"}, el("div",{class:"small muted"},"Record a week of your current numbers so the pilot can be compared fairly. {baseline_hint}"), bf,
+      el("button",{style:"margin-top:8px",onclick:async()=>{ const o={}; for(const kk in bIn) o[kk]=bIn[kk].value; await act("/api/settings",{baseline:o},"Baseline saved"); }},"Save baseline")));
+}
+
+// ------------------------------------------------------------------ Settings
+async function viewSettings(box){
+  const j=await api("/api/settings"); const s=j.settings; S.settings=s;
+  const set=async(k,v,msg)=>{ try{ await api("/api/settings",{[k]:v}); toast(msg||"Saved"); const me=await api("/api/me"); S.settings=me.settings; render(); }catch(e){ toast(e.message); } };
+  const sw=(k,title,desc,roles)=>{ const can=roles.includes(S.me.role); const on=s[k]==="1";
+    return el("div",{class:"switch"}, el("div",{class:"t"}, el("b",{},title), el("span",{class:"small muted"}, desc)), el("button",{class:on?"primary":"",disabled:!can,onclick:()=>set(k,on?"0":"1")}, on?"On":"Off")); };
+  const parts=[el("h1",{},"Settings")];
+  parts.push(el("div",{class:"box"},
+    el("div",{class:"switch"}, el("div",{class:"t"}, el("b",{},"Pause all AI automation"), el("span",{class:"small muted"},"Stops every AI reply right away. Messages are still collected.")),
+      el("button",{class:s.automation_paused==="1"?"danger":"",onclick:()=>set("automation_paused",s.automation_paused==="1"?"0":"1", s.automation_paused==="1"?"AI resumed":"AI paused")}, s.automation_paused==="1"?"Paused — resume":"Pause")),
+    el("div",{class:"switch"}, el("div",{class:"t"}, el("b",{},"AI replies"), el("span",{class:"small muted"},"Review: every AI reply waits for your tap. Auto: routine answers (prices, services, collecting booking details) send on their own.")),
+      el("select",{style:"width:auto",disabled:!isOwner(),onchange:e=>set("reply_mode",e.target.value)}, el("option",{value:"review",selected:s.reply_mode==="review"},"Review each reply"), el("option",{value:"auto",selected:s.reply_mode==="auto"},"Auto for routine replies"))),
+    sw("takeover_on_echo","Replying from the Instagram app takes over","If you answer a customer in the Instagram app, the AI stops replying in that conversation.",["owner","operator"]),
+    sw("intro_line","Introduce the assistant","The first AI reply says it's {owner_s} booking assistant.",["owner","operator"]),
+    el("div",{class:"switch"}, el("div",{class:"t"}, el("b",{},"Assistant voice"), el("span",{class:"small muted"},"As your assistant (\"{owner_s} …\") or in first person as you. First person only with your OK.")),
+      el("select",{style:"width:auto",disabled:!isOwner(),onchange:e=>set("voice_person",e.target.value)}, el("option",{value:"assistant",selected:s.voice_person!=="first_person"},"As {owner_s} assistant"), el("option",{value:"first_person",selected:s.voice_person==="first_person"},"First person as {owner}")))));
+  parts.push(el("h2",{},"Pilot and Instagram sending"), el("div",{class:"box"},
+    el("div",{class:"switch"}, el("div",{class:"t"}, el("b",{},"{owner_s} approval to start the pilot"), el("span",{class:"small muted"}, s.pilot_approved?"Approved "+fmtTime(s.pilot_approved):"Required before anything is sent to real customers.")),
+      el("button",{disabled:!isOwner(),class:s.pilot_approved?"":"primary",onclick:()=>set("pilot_approved", s.pilot_approved?"":"1")}, s.pilot_approved?"Withdraw":"I approve the pilot")),
+    sw("live_send","Send to Instagram","Off = test mode. Turned on only after the pilot is approved and Instagram is connected.",S.hasOperator?["operator"]:["operator","owner"]),
+    el("div",{class:"small",style:"margin-top:8px"}, "Instagram connection (.env): ", Object.entries(j.meta).map(([k,v])=>badge(k.toLowerCase().replace("_"," ")+(v?" ✓":" missing"), v?"b-ok":"b-bad")))));
+  parts.push(el("h2",{},"Calendar"), el("div",{class:"box"}, el("b",{},"Manual entry"), el("div",{class:"small muted"},"{calendar_note}")));
+  const mpr=el("input",{value:s.minutes_per_reply,style:"max-width:100px"}), ret=el("input",{value:s.retention_days||"",placeholder:"keep",style:"max-width:100px"});
+  parts.push(el("h2",{},"Data"), el("div",{class:"box"}, el("div",{class:"row"}, el("span",{class:"grow"},"Minutes one DM reply takes you (for the time-saved estimate)"), mpr, el("button",{onclick:()=>set("minutes_per_reply",mpr.value)},"Save")),
+    el("div",{class:"row",style:"margin-top:8px"}, el("span",{class:"grow"},"Delete messages older than (days, empty = keep)"), ret, el("button",{onclick:()=>set("retention_days",ret.value)},"Save"))));
+  const h=j.health||{}; parts.push(el("h2",{},"System health"), el("div",{class:"box small"}, el("div",{}, "Background worker: "+(j.worker_seconds_ago==null?"not running":j.worker_seconds_ago<30?"running":"last ran "+j.worker_seconds_ago+"s ago")),
+    Object.values(h).map(x=>el("div",{}, badge(x.ok?"OK":"Problem", x.ok?"b-ok":"b-bad"), " ", x.name.replace(/_/g," "), " · ", fmtTime(x.at), " · ", x.detail))));
+  if (j.users) parts.push(el("h2",{},"Users"), el("table",{}, el("tr",{},el("th",{},"User"),el("th",{},"Role")), j.users.map(u=>el("tr",{}, el("td",{},u.name+" ("+u.username+")"), el("td",{},u.role==="owner"?"{owner} (approves bookings)":"AI Sidekicks operator")))));
+  parts.push(el("h2",{},"Recent activity"), el("table",{}, j.audit.map(a=>el("tr",{}, el("td",{class:"small muted"},fmtTime(a.at)), el("td",{class:"small"},a.actor), el("td",{class:"small"},a.action.replace(/[._]/g," ")+(a.target?" #"+a.target:""))))));
+  box.replaceChildren(...parts);
+}
+boot();
+</script>
+</body>
+</html>
