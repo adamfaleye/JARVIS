@@ -170,7 +170,7 @@ def entity_type(n):
     s = str(n or "").upper()
     if not s.strip():
         return "unknown"
-    if re.search(r"\bESTATE\b|\bDECEASED\b|\bHEIRS\b", s):
+    if re.search(r"\bESTATE\b|\bEST$|\bDECEASED\b|\bHEIRS\b", s.strip()):  # county records write estates as "SMITH, JOHN EST"
         return "estate"
     if re.search(r"\bTRUST|TRUSTEE\b", s):
         return "trust"
@@ -646,7 +646,9 @@ def run_job(con, cfg, job_id, log=print, adapter_cls=None):
 def run_queued(con, cfg, log=print):
     """Called from the engine loop: run any jobs the app requested (one at a time, oldest first)."""
     done = 0
-    for j in con.execute("SELECT id FROM hunter_jobs WHERE status='queued' AND cancel=0 ORDER BY id").fetchall():
+    for j in con.execute("""SELECT j.id FROM hunter_jobs j JOIN hunter_sources s ON s.id=j.source_id
+                            WHERE j.status='queued' AND j.cancel=0 AND COALESCE(s.adapter,'')!='clerk_pinellas' ORDER BY j.id""").fetchall():
+        # Clerk sources run in their own background thread (run.py), so a long first backfill never holds up texts and email
         log(f"Hunter job {j['id']} starting")
         run_job(con, cfg, j["id"], log)
         done += 1

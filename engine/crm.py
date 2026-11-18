@@ -477,3 +477,73 @@ def analyze_deal(con, arv, sqft=0, tier="medium", repairs=None, maoPct=None, fee
     buyer_max = num(arv) * pct / 100 - rehab
     return {"arv": num(arv), "rehab": round(rehab), "pct": pct, "fee": fee, "buyerMax": round(buyer_max), "mao": round(buyer_max - fee),
             "roomVsAsking": round(buyer_max - fee - num(asking)) if num(asking) else None}
+
+
+# ---------------------------------------------------------------- call logging by name (voice)
+_WHO_STOP = {"the", "estate", "est", "family", "house", "property", "heirs", "heir", "call", "with", "on", "at", "for", "mr", "mrs", "ms",
+             "miss", "seller", "owner", "lead", "deal", "guy", "lady", "place", "home", "trust", "and", "of"}
+
+
+def _who_tokens(who):
+    return [t for t in re.findall(r"[a-z0-9]+", str(who or "").lower()) if t not in _WHO_STOP and (len(t) >= 3 or t.isdigit())]
+
+
+def find_for_call(con, who):
+    """Deals in the pipeline matching what Mola called them: a seller's name ("the Doe estate") or an address."""
+    live = [d for d in items(con, "deals") if not d.get("archived")]
+    full = [d for d in search_deals(con, who)["deals"] if not d.get("archived")] if has(who) else []
+    if full:
+        return [next(x for x in live if x["id"] == d["id"]) for d in full if any(x["id"] == d["id"] for x in live)]
+    toks = _who_tokens(who)
+    if not toks:
+        return []
+    hits = []
+    for d in live:
+        hay = " ".join(str(d.get(x, "")) for x in ("address", "seller")).lower()
+        if all(t in hay for t in toks):
+            hits.append(d)
+    return hits
+
+
+def county_leads_for_call(con, who):
+    """County leads (not yet in the pipeline) whose owner or address matches."""
+    toks = _who_tokens(who)
+    if not toks:
+        return []
+    out = []
+    for r in con.execute("SELECT * FROM leads WHERE status IN ('new','exported','expired') AND (COALESCE(owner,'')!='' OR COALESCE(address,'')!='')"):
+        hay = f"{r['owner'] or ''} {r['address'] or ''}".lower()
+        if all(t in hay for t in toks):
+            out.append(dict(r))
+    return out
+
+
+def log_call_by_name(con, who, outcome, note="", reason="", followUpDate="", dates_said=None, _ctx=None):
+    """Log a call by who it was with. Finds the deal; if they're only a county lead so far, adds them to the pipeline
+    (owner as seller, address, county, sale date and amount owed in the notes) and logs the call there."""
+    deals = find_for_call(con, who)
+    if len(deals) > 1:
+        names = "; ".join(f"{d.get('address')}" + (f" ({d.get('seller')})" if d.get("seller") else "") for d in deals[:4])
+        return {"status": "needs_input", "question": f"Which one: {names}?"}
+    if deals:
+        return log_call(con, deals[0]["id"], outcome, note=note, reason=reason, followUpDate=followUpDate, dates_said=dates_said, _ctx=_ctx)
+    leads = county_leads_for_call(con, who)
+    if len(leads) > 1:
+        names = "; ".join(f"{r['address']} ({r['owner'] or 'owner unknown'})" for r in leads[:4])
+        return {"status": "needs_input", "question": f"Several county leads match. Which one: {names}?"}
+    if not leads:
+        return {"status": "needs_input", "question": f"I can't find {who} in the pipeline or the county leads. What's the property address?"}
+    r = leads[0]
+    addr = ", ".join(x for x in [r["address"], r["city"], f"{r['state'] or ''} {r['zip'] or ''}".strip()] if x)
+    sale = {"foreclosure_auction": "Foreclosure auction", "tax_deed": "Tax deed sale"}.get(r["source_type"] or "", (r["source_type"] or "County sale").replace("_", " ").capitalize())
+    facts = f"{sale} {r['event_date'] or 'date unknown'}" + (f"; amount owed ${r['judgment_amount']:,.0f}" if r["judgment_amount"] else "") + (f"; case {r['case_number']}" if r["case_number"] else "")
+    made = create_lead(con, addr, seller=(r["owner"] or ""), county=r["county"] or "", state=r["state"] or "", source=f"County records ({sale.lower()})",
+                       notes=facts, _ctx=_ctx)
+    if made.get("status") != "ok":
+        return made
+    con.execute("UPDATE leads SET status='synced' WHERE id=?", (r["id"],))
+    con.commit()
+    res = log_call(con, made["id"], outcome, note=note, reason=reason, followUpDate=followUpDate, dates_said=dates_said, _ctx=_ctx)
+    if res.get("status") == "ok":
+        res["summary"] = f"Added {addr} to the pipeline from the county leads. " + res["summary"]
+    return res

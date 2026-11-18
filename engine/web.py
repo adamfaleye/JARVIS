@@ -20,6 +20,7 @@ import hashlib
 import hmac
 import ipaddress
 import json
+import re
 import secrets
 import socket
 import ssl
@@ -34,6 +35,8 @@ from .config import ROOT
 
 WEB_DIR = ROOT / "web"
 APP_FILE = WEB_DIR / "jarvis.html"
+CHARS_DIR = WEB_DIR / "chars"
+CHAR_NAME = re.compile(r"[a-z0-9_]{1,40}\.(json|jpg|png|txt)")
 STATE_DIR = ROOT / "data" / "web"
 LOG = STATE_DIR / "web.log"
 TOOLS = ("crm_pull", "crm_push", "list_counties")
@@ -256,7 +259,25 @@ class Handler(BaseHTTPRequestHandler):
             return self._send(200, {"ok": True, "app": "JARVIS Engine", "paired": bool(self._device(con))})
         if path == "/favicon.ico":
             return self._send(204, b"", "image/x-icon")
+        if path.startswith("/chars/"):
+            return self._static_char(path[len("/chars/"):])
         return self._send(404, {"error": "not found"})
+
+    def _static_char(self, name):
+        """3D people for HQ (web/chars). Plain file names only; nothing outside that folder."""
+        if not CHAR_NAME.fullmatch(name):
+            return self._send(404, {"error": "not found"})
+        f = CHARS_DIR / name
+        if not f.is_file():
+            return self._send(404, {"error": "not found"})
+        data = f.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", {"json": "application/json", "jpg": "image/jpeg", "png": "image/png"}.get(name.rsplit(".", 1)[1], "text/plain; charset=utf-8"))
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "max-age=86400")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        self.wfile.write(data)
 
     def do_POST(self):
         path = self.path.split("?", 1)[0]

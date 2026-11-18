@@ -32,8 +32,15 @@ CREATE TABLE IF NOT EXISTS kv(k TEXT PRIMARY KEY, v TEXT);
 
 def connect():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    con = sqlite3.connect(DB_PATH)
+    # Two processes share this file: the engine loop and the PC-link server Claude runs. Wait for each other instead of
+    # failing with "database is locked", and use WAL so reading never blocks on a write.
+    con = sqlite3.connect(DB_PATH, timeout=30)
     con.row_factory = sqlite3.Row
+    try:
+        con.execute("PRAGMA journal_mode=WAL")
+        con.execute("PRAGMA busy_timeout=30000")
+    except sqlite3.DatabaseError:
+        pass
     con.executescript(SCHEMA)
     return con
 
@@ -78,7 +85,29 @@ def insert_lead(con, rec):
          rec.get("parcel_id"), rec.get("address"), rec.get("city"), rec.get("zip"), rec.get("owner"),
          money(rec.get("judgment_amount")), money(rec.get("assessed_value")), rec.get("event_date"),
          rec.get("url"), json.dumps(rec.get("raw", {}), default=str)[:20000], now()))
-    return cur.rowcount == 1
+    if cur.rowcount == 1:
+        return True
+    # already on file: a sale that was postponed to a later date comes back onto the review list
+    new_date = str(rec.get("event_date") or "")
+    if new_date:
+        con.execute("UPDATE leads SET event_date=?, status=CASE WHEN status='expired' THEN 'new' ELSE status END "
+                    "WHERE key=? AND COALESCE(event_date,'') < ?", (new_date, key, new_date))
+    return False
+
+
+# County leads whose sale date hasn't passed (or has no date). Used by everything that lists leads waiting for review.
+UPCOMING = "(event_date IS NULL OR event_date = '' OR event_date >= date('now','localtime'))"
+
+
+def expire_past(con, today=None):
+    """Leads still waiting for review whose auction or sale date has passed are set aside (status 'expired') so the
+    review list only shows sales that can still be worked. A postponed sale that the scraper sees again with a new date
+    comes back automatically (insert_lead). Returns how many were set aside."""
+    day = today or datetime.now().date().isoformat()
+    cur = con.execute("UPDATE leads SET status='expired' WHERE status IN ('new','exported') AND event_date IS NOT NULL "
+                      "AND event_date != '' AND event_date < ?", (day,))
+    con.commit()
+    return cur.rowcount
 
 
 def kv_get(con, k, default=None):
@@ -106,9 +135,14 @@ def connect():  # noqa: F811  (adds CRM mirror tables)
     for c, t in [("campaign_id", "TEXT"), ("sender", "TEXT"), ("status", "TEXT"), ("error_code", "TEXT"), ("step", "INTEGER")]:
         if c not in have:  # campaign / number / delivery tracking
             con.execute(f"ALTER TABLE messages ADD COLUMN {c} {t}")
-    try:  # CSV export is tracked separately so exported leads still reach the JARVIS app
-        con.execute("ALTER TABLE leads ADD COLUMN exported_at TEXT")
-        con.commit()
-    except sqlite3.OperationalError:
-        pass
+    have = {r[1] for r in con.execute("PRAGMA table_info(leads)")}
+    # exported_at: CSV export is tracked separately so exported leads still reach the JARVIS app
+    # owner_info / owner_checked: owner looked up from the county appraiser (engine/owner_lookup.py)
+    for c in ("exported_at", "owner_info", "owner_checked"):
+        if c not in have:
+            try:
+                con.execute(f"ALTER TABLE leads ADD COLUMN {c} TEXT")
+                con.commit()
+            except sqlite3.OperationalError:
+                pass
     return con

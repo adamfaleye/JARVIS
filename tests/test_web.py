@@ -36,6 +36,18 @@ ok(s == 200 and "window.__JARVIS_WEB__" in html and html.index("__JARVIS_WEB__")
 ok("xr-spatial-tracking=(self)" in (h.get("Permissions-Policy") or "") and h.get("Cache-Control") == "no-store", "XR permission policy and no-store headers")
 ok(not (web.STATE_DIR / "key.pem").read_text().count("ENCRYPTED") and (web.STATE_DIR / "cert.pem").exists(), "self-signed certificate made on first start")
 
+# 3D people files (web/chars): served with a cache header, plain names only
+web.CHARS_DIR = web.WEB_DIR / "chars"; web.CHARS_DIR.mkdir()
+(web.CHARS_DIR / "clips.json").write_text('{"v":1}', encoding="utf-8"); (web.CHARS_DIR / "hunter_0.jpg").write_bytes(b"\xff\xd8\xff\xe0jpeg")
+(tmp / "secret.json").write_text('{"k":"x"}', encoding="utf-8")
+s, b, h = req("/chars/clips.json")
+ok(s == 200 and b == {"v": 1} and "max-age" in (h.get("Cache-Control") or ""), "serves chars/clips.json with a cache header")
+r = urllib.request.urlopen(urllib.request.Request(BASE + "/chars/hunter_0.jpg"), context=ctx, timeout=10)
+ok(r.status == 200 and r.headers.get_content_type() == "image/jpeg" and r.read()[:3] == b"\xff\xd8\xff", "serves a person's texture")
+for bad in ["/chars/../secret.json", "/chars/%2e%2e/secret.json", "/chars/Secret.JSON", "/chars/a/b.json", "/chars/x.html", "/chars/x.glb", "/chars/missing.json"]:
+    s, b, _ = req(bad)
+    ok(s == 404, f"refuses {bad}")
+
 s, b, _ = req("/api/tool", {"name": "crm_pull", "args": {"since": ""}})
 ok(s == 401 and b.get("code") == "not_paired", "engine calls without a device token are refused")
 s, b, _ = req("/api/tool", {"name": "crm_pull", "args": {}}, token="made-up")

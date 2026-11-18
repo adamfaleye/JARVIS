@@ -95,6 +95,7 @@ Quest 2 (Meta Quest Browser) ──HTTPS on your Wi-Fi──► python run.py we
 **Rules that carry over unchanged:**
 - Every confirmation that pops up on desktop pops up on the headset panel. It's the same `confirmSheet` step, routed to VR.
 - Entering VR grants nothing extra. Leaving VR cancels nothing.
+- VR covers the MolaBucks Capital operations floor. The city (JARVIS 2.0 Phase 2) and the AI Sidekicks floor are desktop and phone only for now. Pressing Enter VR on the street takes you to the MolaBucks floor first.
 
 ## Data honesty
 

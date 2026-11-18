@@ -1,4 +1,5 @@
 """MCP server so Claude Desktop (and JARVIS) can talk to the engine. See README › Connect to Claude Desktop."""
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -128,14 +129,24 @@ def crm_push(items: list[dict] = [], deletes: list[dict] = [], lead_marks: dict 
 def list_new_leads(limit: int = 200, county: str = "") -> list[dict]:
     """New county-record leads not yet sent to JARVIS, newest sale/filing dates first. Optional county filter."""
     con = db.connect()
-    q = "SELECT id,county,state,source_type,case_number,parcel_id,address,city,zip,owner,judgment_amount,assessed_value,event_date,url FROM leads WHERE status IN ('new','exported')"
+    q = ("SELECT id,county,state,source_type,case_number,parcel_id,address,city,zip,owner,judgment_amount,assessed_value,event_date,url,owner_info "
+         "FROM leads WHERE status IN ('new','exported') AND " + db.UPCOMING)
     args = []
     if county:
         q += " AND county LIKE ?"
         args.append(f"%{county}%")
     q += " ORDER BY event_date LIMIT ?"
     args.append(max(1, min(int(limit or 200), 1000)))
-    return [dict(r) for r in con.execute(q, args)]
+    out = []
+    for r in con.execute(q, args):
+        d = dict(r)
+        info = json.loads(d.pop("owner_info") or "null") or {}
+        if info.get("owners"):  # from the county appraiser: mailing address, property facts, and what may signal a motivated owner
+            d.update(mailing_address=info.get("mailing_address"), year_built=info.get("year_built"), living_sqft=info.get("living_sqft"),
+                     property_use=info.get("use"), appraiser_value=info.get("just_value"), appraiser_estimate=info.get("sales_comparison"),
+                     owner_signals=[x["why"] for x in info.get("signals") or []])
+        out.append(d)
+    return out
 
 
 @mcp.tool()
